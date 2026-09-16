@@ -25,6 +25,7 @@ Open **http://localhost:3001**. Deploy behind HTTPS to install on phones. Androi
 ### Implemented in this first release
 
 - Responsive patient, cohort and clinical-study workspaces; mobile bottom navigation.
+- **My Health synthetic persona:** daily manual readings, activity entries, trends, editable timeline, and bundled report preview → simulated extraction → correction → confirmed save. No actual OCR or real uploads. See [My Health walkthrough and storage limitations](demo/my-health.md).
 - Fixed January 15, 2026 synthetic patient snapshot, evidence-linked timeline and missing-data disclosures.
 - Seeded generator for 480 historical cases; server-side eligibility, similarity and aggregation.
 - Versioned matching rules; configurable cohort filters; minimum cohort and small-cell suppression.

@@ -5,6 +5,7 @@ import { patient, getStudy } from './data.js';
 import { findCohort, parseFilters } from './analytics.js';
 import { answerQuestion, reviewQuestions } from './copilot.js';
 import { DATA_VERSION, MATCH_VERSION } from '../shared/contracts.js';
+import { healthRouter } from './health.js';
 
 export function createApp() {
   const app = express();
@@ -35,6 +36,7 @@ export function createApp() {
     next();
   });
   app.use(express.json({ limit: '8kb' }));
+  app.use('/api/health-demo', healthRouter());
   app.get('/api/health', (_req, res) =>
     res.json({
       status: 'ok',

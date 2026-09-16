@@ -44,8 +44,9 @@ import {
   type StudySnapshot,
 } from '../shared/contracts';
 import { api } from './api';
+import { MyHealth } from './MyHealth';
 
-type Tab = 'patient' | 'cohort' | 'study';
+type Tab = 'patient' | 'cohort' | 'study' | 'health';
 type InstallEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: string }>;
@@ -347,13 +348,24 @@ export default function App() {
           </span>
           <span>
             research<span className="brand-light">twin</span>
-            <small>CLINICIAN WORKSPACE</small>
+            <small>HEALTH & RESEARCH WORKSPACE</small>
           </span>
         </a>
         <div className="workspace-label">
           WORKSPACE <span>01</span>
         </div>
         <nav aria-label="Main navigation">
+          <button
+            className={tab === 'health' ? 'nav-item active' : 'nav-item'}
+            onClick={() => {
+              setTab('health');
+              setGuide(null);
+            }}
+            aria-current={tab === 'health' ? 'page' : undefined}
+          >
+            <Activity size={19} />
+            My Health
+          </button>
           <button
             className={tab === 'patient' ? 'nav-item active' : 'nav-item'}
             onClick={() => setTab('patient')}
@@ -411,11 +423,13 @@ export default function App() {
           <div className="breadcrumb">
             Workspace <ChevronRight size={14} />
             <strong>
-              {tab === 'patient'
-                ? 'Current patient twin'
-                : tab === 'cohort'
-                  ? 'Health Twin Buddy'
-                  : 'Clinical research'}
+              {tab === 'health'
+                ? 'My Health · demo persona'
+                : tab === 'patient'
+                  ? 'Current patient twin'
+                  : tab === 'cohort'
+                    ? 'Health Twin Buddy'
+                    : 'Clinical research'}
             </strong>
           </div>
           <div className="top-actions">
@@ -453,24 +467,30 @@ export default function App() {
             <div>
               <span className="eyebrow">CONNECTED CONTEXT. REVIEWABLE EVIDENCE.</span>
               <h1>
-                {tab === 'patient'
-                  ? 'A clearer picture starts here.'
-                  : tab === 'cohort'
-                    ? 'Similar stories. Important differences.'
-                    : 'Research, with context.'}
+                {tab === 'health'
+                  ? 'Your everyday health, together.'
+                  : tab === 'patient'
+                    ? 'A clearer picture starts here.'
+                    : tab === 'cohort'
+                      ? 'Similar stories. Important differences.'
+                      : 'Research, with context.'}
               </h1>
               <p>
-                {tab === 'patient'
-                  ? 'From fragmented records to a source-linked patient view.'
-                  : tab === 'cohort'
-                    ? 'Discover comparable historical patterns—not a diagnosis.'
-                    : 'A living view of one synthetic clinical study.'}
+                {tab === 'health'
+                  ? 'Practice logging daily readings and reviewing synthetic reports.'
+                  : tab === 'patient'
+                    ? 'From fragmented records to a source-linked patient view.'
+                    : tab === 'cohort'
+                      ? 'Discover comparable historical patterns—not a diagnosis.'
+                      : 'A living view of one synthetic clinical study.'}
               </p>
             </div>
-            <button className="secondary" onClick={() => startGuide(0)} disabled={busy}>
-              <Play size={15} />
-              Guided demo<span className="muted">5 min</span>
-            </button>
+            {tab !== 'health' && (
+              <button className="secondary" onClick={() => startGuide(0)} disabled={busy}>
+                <Play size={15} />
+                Guided demo<span className="muted">5 min</span>
+              </button>
+            )}
           </section>
           {guide !== null && (
             <section className="guide" aria-label="Guided demo">
@@ -498,7 +518,9 @@ export default function App() {
               </div>
             </section>
           )}
-          {loading ? (
+          {tab === 'health' ? (
+            <MyHealth online={online} />
+          ) : loading ? (
             <div className="startup" role="status">
               <LoaderCircle className="spin" />
               <h2>Assembling the synthetic workspace…</h2>
