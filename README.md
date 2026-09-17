@@ -1,5 +1,59 @@
 # Research Twin
 
+## Run the PWA prototype
+
+The repository now contains a working **synthetic-data prototype**, built with React, TypeScript, Vite and an Express API. The original project vision below includes future capabilities that are **not yet integrated**.
+
+**Requirements:** Node.js 22 LTS and npm.
+
+```powershell
+npm ci
+npm run dev
+```
+
+Open **http://localhost:5173**. The API runs on port 3001. No Azure subscription, credentials, or real patient records are needed.
+
+For the installable production PWA (including its service worker):
+
+```powershell
+npm run build
+npm start
+```
+
+Open **http://localhost:3001**. Deploy behind HTTPS to install on phones. Android supports browser installation; on iOS use Safari → Share → Add to Home Screen. A phone accessing an HTTP LAN address can preview the responsive UI, but installation/service-worker functionality requires HTTPS. Only the application shell is available offline; research API responses are intentionally not cached.
+
+### Implemented in this first release
+
+- Responsive patient, cohort and clinical-study workspaces; mobile bottom navigation.
+- **My Health synthetic persona:** daily manual readings, activity entries, trends, editable timeline, and bundled report preview → simulated extraction → correction → confirmed save. No actual OCR or real uploads. See [My Health walkthrough and storage limitations](demo/my-health.md).
+- Fixed January 15, 2026 synthetic patient snapshot, evidence-linked timeline and missing-data disclosures.
+- Seeded generator for 480 historical cases; server-side eligibility, similarity and aggregation.
+- Versioned matching rules; configurable cohort filters; minimum cohort and small-cell suppression.
+- Differential evidence matrix, recorded diagnostic, investigation, treatment, confirmation and outcome patterns.
+- Evidence dialogs containing sources, calculation details, date windows and limitations.
+- **Deterministic Copilot demonstration**, not a connected generative AI model: supported prompts produce source-linked templates; unknown, diagnostic, prescribing and individual-disclosure requests are declined.
+- Clinician questions, downloadable Markdown review brief, study metrics and guided demo.
+- PWA manifest, generated icons, app-shell service worker, offline/error states and update prompt.
+- Capacitor configuration and documented path to native Android/iOS store packaging.
+- Unit, API and desktop/mobile-emulation browser tests.
+
+### Validation
+
+```powershell
+npm run check
+npm run test:e2e
+```
+
+Browser tests currently use installed Microsoft Edge, including a mobile viewport emulation. Run `npm run build` first. Physical Android/iOS installation and Safari validation are still release gates, not implied by emulation.
+
+### Scope and safety
+
+**Do not enter real patient information.** This is not a clinical product. There is no authentication, real EHR/FHIR ingestion, Azure AI Foundry, Microsoft Fabric, live literature, or enterprise privacy/governance integration yet. Synthetic categories are fictional and independently generated, not medical evidence. Minimum-size suppression is a demonstration safeguard, not a formal privacy guarantee against repeated-query differencing.
+
+See [setup and architecture](demo/implementation.md), [five-minute walkthrough](demo/demo-script.md), and [native release roadmap](demo/native-roadmap.md).
+
+---
+
 ## AI Copilot for Clinical Studies and Clinically Similar Cohort Intelligence
 
 > **Hackathon 2026 project concept for “Hack for Industry – Healthcare & Life Sciences: The UI for AI for Clinicians.”**

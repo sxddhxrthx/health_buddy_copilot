@@ -1,0 +1,200 @@
+.my-health {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.my-health .patient-banner {
+  margin: 0;
+}
+.my-health h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.health-section {
+  padding: 24px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+.my-health p {
+  color: #586f77;
+  font-size: 12px;
+}
+.health-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.health-summary article {
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+}
+.health-summary strong {
+  font-size: 22px;
+  color: var(--teal);
+}
+.health-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.health-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.my-health label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 0;
+}
+.my-health input,
+.my-health select,
+.my-health textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #cbdadf;
+  border-radius: 6px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  min-height: 44px;
+}
+.my-health select:focus-visible,
+.my-health textarea:focus-visible,
+.my-health summary:focus-visible {
+  outline: 3px solid #36ab9b;
+  outline-offset: 3px;
+}
+.my-health textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+.my-health fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+.health-full {
+  grid-column: 1 / -1;
+}
+.my-health .health-check {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+.my-health .health-check input {
+  width: 19px;
+  height: 19px;
+  min-height: 19px;
+  flex-shrink: 0;
+  margin: 0;
+}
+.health-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.health-actions button {
+  min-height: 44px;
+}
+.health-chart {
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  background: #f7faf9;
+  border-radius: 8px;
+}
+.my-health details {
+  font-size: 12px;
+}
+.my-health summary {
+  cursor: pointer;
+  padding: 10px 0;
+}
+.health-report {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f6f8fa;
+  border: 1px dashed #bbcfd4;
+  padding: 20px;
+  border-radius: 8px;
+  font:
+    13px/1.9 'Segoe UI',
+    sans-serif;
+}
+.report-review form {
+  display: grid;
+  gap: 18px;
+}
+.health-extraction {
+  display: grid;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 18px;
+}
+.health-records article {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.health-records article > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+.health-records time {
+  color: var(--muted);
+  font-size: 12px;
+}
+.health-source {
+  text-decoration: underline;
+  color: var(--teal);
+  padding: 8px 0;
+  justify-content: start;
+  text-align: left;
+}
+@media (max-width: 1100px) {
+  .health-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .health-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 500px) {
+  .health-section {
+    padding: 16px;
+  }
+  .health-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .health-summary article {
+    padding: 14px;
+  }
+  .health-summary strong {
+    font-size: 18px;
+  }
+  .health-records article {
+    flex-direction: column;
+  }
+}
