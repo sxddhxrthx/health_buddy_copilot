@@ -18,6 +18,7 @@ import {
   HeartPulse,
   Layers3,
   LoaderCircle,
+  LogOut,
   Microscope,
   Play,
   RefreshCw,
@@ -44,9 +45,10 @@ import {
   type StudySnapshot,
 } from '../shared/contracts';
 import { api } from './api';
-import { MyHealth } from './MyHealth';
+import { DoctorWorkspace, MyHealth } from './MyHealth';
+import type { Account } from '../shared/care';
 
-type Tab = 'patient' | 'cohort' | 'study' | 'health';
+type Tab = 'patient' | 'cohort' | 'study' | 'health' | 'reference';
 type InstallEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: string }>;
@@ -180,10 +182,22 @@ function BrowserPwaStatus() {
   );
 }
 
-export default function App() {
+export default function App({
+  account,
+  onLogout,
+}: {
+  account: Account;
+  onLogout: () => Promise<void>;
+}) {
   const [patient, setPatient] = useState<PatientState | null>(null);
   const [study, setStudy] = useState<StudySnapshot | null>(null);
-  const [tab, setTab] = useState<Tab>('patient');
+  const [tab, setTab] = useState<Tab>(account.role === 'patient' ? 'health' : 'patient');
+  const [dirtyVisit, setDirtyVisit] = useState(false);
+  function navigate(next: Tab) {
+    if (next !== tab && dirtyVisit && !window.confirm('Discard unsaved visit changes?')) return;
+    setTab(next);
+    setGuide(null);
+  }
   const [filters, setFilters] = useState<CohortFilters>({ ...DEFAULT_FILTERS });
   const [cohort, setCohort] = useState<CohortResult | null>(null);
   const [matching, setMatching] = useState(false);
@@ -201,6 +215,10 @@ export default function App() {
   const [about, setAbout] = useState(false);
   const answerRef = useRef<HTMLDivElement>(null);
   const load = useCallback(async () => {
+    if (account.role === 'patient') {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -214,7 +232,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [account.role]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -308,7 +326,7 @@ export default function App() {
   }
   function startGuide(step: number) {
     setGuide(step);
-    setTab(step === 0 ? 'patient' : 'cohort');
+    setTab(step === 0 ? 'reference' : 'cohort');
     if (step === 3) void ask(PROMPTS[5]);
     if (step === 4) void ask(PROMPTS[4]);
   }
@@ -355,56 +373,66 @@ export default function App() {
           WORKSPACE <span>01</span>
         </div>
         <nav aria-label="Main navigation">
-          <button
-            className={tab === 'health' ? 'nav-item active' : 'nav-item'}
-            onClick={() => {
-              setTab('health');
-              setGuide(null);
-            }}
-            aria-current={tab === 'health' ? 'page' : undefined}
-          >
-            <Activity size={19} />
-            My Health
-          </button>
-          <button
-            className={tab === 'patient' ? 'nav-item active' : 'nav-item'}
-            onClick={() => setTab('patient')}
-          >
-            <HeartPulse size={19} />
-            Current patient
-            <span className="nav-dot" />
-          </button>
-          <button
-            className={tab === 'cohort' ? 'nav-item active' : 'nav-item'}
-            onClick={() => setTab('cohort')}
-          >
-            <Users size={19} />
-            Buddy cohort
-            {cohort && !cohort.suppressed && <span className="nav-count">{cohort.size}</span>}
-          </button>
-          <button
-            className={tab === 'study' ? 'nav-item active' : 'nav-item'}
-            onClick={() => setTab('study')}
-          >
-            <FlaskConical size={19} />
-            Research study
-          </button>
+          {account.role === 'patient' && (
+            <button
+              className={tab === 'health' ? 'nav-item active' : 'nav-item'}
+              onClick={() => {
+                navigate('health');
+              }}
+              aria-current={tab === 'health' ? 'page' : undefined}
+            >
+              <Activity size={19} />
+              My Health
+            </button>
+          )}
+          {account.role === 'doctor' && (
+            <>
+              <button
+                className={tab === 'patient' ? 'nav-item active' : 'nav-item'}
+                onClick={() => navigate('patient')}
+                aria-current={tab === 'patient' ? 'page' : undefined}
+              >
+                <HeartPulse size={19} />
+                Current patient
+                <span className="nav-dot" />
+              </button>
+              <button
+                className={tab === 'cohort' || tab === 'reference' ? 'nav-item active' : 'nav-item'}
+                onClick={() => navigate('cohort')}
+                aria-current={tab === 'cohort' || tab === 'reference' ? 'page' : undefined}
+              >
+                <Users size={19} />
+                Buddy cohort
+                {cohort && !cohort.suppressed && <span className="nav-count">{cohort.size}</span>}
+              </button>
+              <button
+                className={tab === 'study' ? 'nav-item active' : 'nav-item'}
+                onClick={() => navigate('study')}
+                aria-current={tab === 'study' ? 'page' : undefined}
+              >
+                <FlaskConical size={19} />
+                Research study
+              </button>
+            </>
+          )}
         </nav>
-        <div className="sidebar-note">
-          <div className="orb">
-            <Layers3 size={34} />
+        {account.role === 'doctor' && (
+          <div className="sidebar-note">
+            <div className="orb">
+              <Layers3 size={34} />
+            </div>
+            <h3>
+              People like this patient.
+              <br />
+              Not another person.
+            </h3>
+            <p>Comparable evidence, without exposing an individual.</p>
+            <span>
+              <ShieldCheck size={14} />
+              Aggregate-only demo
+            </span>
           </div>
-          <h3>
-            People like this patient.
-            <br />
-            Not another person.
-          </h3>
-          <p>Comparable evidence, without exposing an individual.</p>
-          <span>
-            <ShieldCheck size={14} />
-            Aggregate-only demo
-          </span>
-        </div>
+        )}
         <div className="sidebar-bottom">
           <button className="nav-item" onClick={() => setAbout(true)}>
             <CircleHelp size={18} />
@@ -413,7 +441,8 @@ export default function App() {
           <div className="profile">
             <span>RT</span>
             <div>
-              Research workspace<small>Microsoft Hackathon 2026</small>
+              {account.name}
+              <small>{account.role === 'patient' ? 'Patient' : 'Doctor'} workspace</small>
             </div>
           </div>
         </div>
@@ -426,7 +455,7 @@ export default function App() {
               {tab === 'health'
                 ? 'My Health · demo persona'
                 : tab === 'patient'
-                  ? 'Current patient twin'
+                  ? 'Shared patient records'
                   : tab === 'cohort'
                     ? 'Health Twin Buddy'
                     : 'Clinical research'}
@@ -438,6 +467,19 @@ export default function App() {
               Synthetic demo
             </span>
             <PwaStatus />
+            <button
+              className="secondary"
+              title="Sign out"
+              aria-label="Sign out"
+              disabled={!online}
+              onClick={() => {
+                if (!dirtyVisit || window.confirm('Discard unsaved visit changes and sign out?'))
+                  void onLogout();
+              }}
+            >
+              <LogOut size={16} />
+              <span>Sign out</span>
+            </button>
           </div>
         </header>
         <main id="workspace">
@@ -468,24 +510,26 @@ export default function App() {
               <span className="eyebrow">CONNECTED CONTEXT. REVIEWABLE EVIDENCE.</span>
               <h1>
                 {tab === 'health'
-                  ? 'Your everyday health, together.'
+                  ? 'My Health'
                   : tab === 'patient'
-                    ? 'A clearer picture starts here.'
+                    ? 'Current patient'
                     : tab === 'cohort'
-                      ? 'Similar stories. Important differences.'
-                      : 'Research, with context.'}
+                      ? 'Buddy cohort'
+                      : tab === 'reference'
+                        ? 'Reference patient'
+                        : 'Research study'}
               </h1>
               <p>
                 {tab === 'health'
-                  ? 'Practice logging daily readings and reviewing synthetic reports.'
+                  ? `${account.name} / Patient workspace`
                   : tab === 'patient'
-                    ? 'From fragmented records to a source-linked patient view.'
+                    ? `${account.name} / Doctor workspace`
                     : tab === 'cohort'
                       ? 'Discover comparable historical patterns—not a diagnosis.'
                       : 'A living view of one synthetic clinical study.'}
               </p>
             </div>
-            {tab !== 'health' && (
+            {tab !== 'health' && tab !== 'patient' && (
               <button className="secondary" onClick={() => startGuide(0)} disabled={busy}>
                 <Play size={15} />
                 Guided demo<span className="muted">5 min</span>
@@ -519,7 +563,14 @@ export default function App() {
             </section>
           )}
           {tab === 'health' ? (
-            <MyHealth online={online} />
+            <MyHealth online={online} account={account} />
+          ) : tab === 'patient' ? (
+            <DoctorWorkspace
+              account={account}
+              online={online}
+              dirty={dirtyVisit}
+              onDirtyChange={setDirtyVisit}
+            />
           ) : loading ? (
             <div className="startup" role="status">
               <LoaderCircle className="spin" />
@@ -528,6 +579,19 @@ export default function App() {
             </div>
           ) : patient && study ? (
             <>
+              <section className="notice reference-notice" aria-label="Reference research boundary">
+                <strong>Reference research demo / Alex Morgan</strong>
+                <p>
+                  This fixed fictional scenario is separate from your shared patients. Matching,
+                  Copilot answers and review briefs do not use their records.
+                </p>
+                {tab !== 'reference' && (
+                  <button className="secondary" onClick={() => navigate('reference')}>
+                    <BookOpen size={16} />
+                    View reference patient
+                  </button>
+                )}
+              </section>
               <section className="patient-banner">
                 <div className="patient-identity">
                   <div className="avatar">
@@ -554,7 +618,7 @@ export default function App() {
               </section>
               <div className="content-grid">
                 <div className="workspace-content">
-                  {tab === 'patient' && (
+                  {tab === 'reference' && (
                     <>
                       <section className="card">
                         <div className="section-head">
@@ -1227,9 +1291,9 @@ export default function App() {
           <div className="notice">
             <strong>Not connected yet</strong>
             <p>
-              Azure AI Foundry, Fabric, FHIR, live literature, authentication and production
-              governance. No real patient data should be entered. Minimum-size controls alone are
-              not a production privacy guarantee.
+              Azure AI Foundry, Fabric, FHIR, live literature and production governance. No real
+              patient data should be entered. Minimum-size controls alone are not a production
+              privacy guarantee.
             </p>
           </div>
           <p>

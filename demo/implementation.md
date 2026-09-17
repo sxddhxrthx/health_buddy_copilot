@@ -2,12 +2,19 @@
 
 ## Delivery plan and current state
 
+The original clinician flow below is now the **reference research demonstration** inside the
+authenticated doctor workspace. Shared patient records and visits do not enter its matching,
+Copilot or brief. See [My Health](my-health.md) for care flows and [CONTRIBUTING.md](../CONTRIBUTING.md)
+for generated accounts, persistent SQLite and Compose startup. Except health status and supported
+auth routes, APIs require authentication; reference endpoints additionally require the doctor role.
+The authenticated demo uses one origin. Native/separate-origin authentication needs additional work.
+
 1. PWA foundation and independent API — implemented.
 2. Synthetic patient and evidence-linked timeline — implemented.
 3. Deterministic cohort matching, aggregate disclosure controls and evidence matrix — implemented.
 4. Bounded Copilot demonstration and review brief — implemented as exact-allowlist templates, not an LLM.
 5. Synthetic study workspace, guided demo and automated tests — implemented.
-6. Azure integrations, authentication and governed AI — future work.
+6. Local authenticated synthetic workspaces and SQLite persistence — implemented; production identity, Azure integrations and governed AI remain future work.
 7. Native app packaging, device testing and store submission — final delivery goal; see native roadmap.
 
 ## Structure
@@ -40,10 +47,15 @@ npm run test:e2e
 
 Development uses Vite on 5173, proxying `/api` to Express on 3001. Production Express serves both `dist` and `/api` on port 3001 (or `PORT`). The source-running API uses `tsx`, so production hosting must install development dependencies too, or introduce a separately compiled server build before omitting them.
 
+Docker now uses the separately compiled server (`npm run build:server`) and prunes development
+dependencies before copying them to its final image. The container runs Node directly, without
+npm, Yarn, tsx or esbuild. Local `npm start` remains the source-running developer entry point.
+
 `npm start` does not load `.env` automatically. Set server variables in the host environment/PowerShell; Vite loads `.env` for `VITE_*` build-time values. Never place secrets in `VITE_*` variables.
 
 ```powershell
 $env:PORT = '3001'
+$env:APP_ORIGIN = 'http://localhost:3001'
 npm start
 ```
 
@@ -51,7 +63,7 @@ npm start
 
 Use a Node.js host (for example, Azure App Service with a supported Node 22 runtime) behind HTTPS. Build with `npm ci && npm run build`; start with `npm start`. Configure `PORT` to the host's expected listening port. Use one origin for the frontend and API. Do not publish only `dist` to a static host without also configuring a reachable API.
 
-No cloud resources have been created and no deployment has been performed by this implementation. Provisioning, tenant permissions and host-specific configuration remain necessary. The API is intentionally open for synthetic demo use only; add authentication and abuse controls before broader use, even with synthetic data.
+No cloud resources have been created and no deployment has been performed by this implementation. Provisioning, tenant permissions and host-specific configuration remain necessary. Local authenticated accounts are provisioned for synthetic demo use only. Public hosting still requires HTTPS, managed secrets, account recovery/provisioning policies and security review; do not expose the local demo configuration as a real-user service.
 
 ## Deterministic matching
 

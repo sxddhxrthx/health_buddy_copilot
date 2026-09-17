@@ -14,6 +14,31 @@ contribution guide; adding files alone does not enforce them.
 
 ## Run the PWA prototype
 
+### Authenticated local demo
+
+The requested Option A implementation adds Better Auth login, SQLite persistence, separate patient
+and doctor navigation, sharing with selected doctors, and fictional doctor-authored visit records.
+Partial sharing and specialty filtering are deferred. Alex Morgan remains a separate reference
+research demo. See [the decision and pending review](docs/decisions/0002-authenticated-synthetic-workspaces.md).
+
+With Docker Desktop running Linux containers, start the complete setup:
+
+```powershell
+docker compose up --build --wait
+```
+
+Open http://localhost:8080. Migrations and synthetic seeds are automatic; the named volume preserves
+data and generated credentials. Inspect `/data/demo-accounts.json` privately through the app
+container's Docker Desktop Files view. Never commit or share that file. No public sign-up is enabled.
+
+Without Docker, use Node 22.13+ and `npm ci`, then `npm run demo` on port 8080. Local credentials
+are in `.local/demo-accounts.json` (ignored by Git). Development still uses `npm run dev` on port
+5173. See [CONTRIBUTING.md](CONTRIBUTING.md) for storage, backup and test setup.
+
+Sam Taylor and Jordan Lee share with Dr Avery Chen; Casey Patel shares with Dr Riley Shah and has
+a finalized fictional visit. Patients manage personal entries and sharing; doctors select shared
+patients and author visits. Patients can read finalized visits but cannot edit or delete them.
+
 The repository now contains a working **synthetic-data prototype**, built with React, TypeScript, Vite and an Express API. The original project vision below includes future capabilities that are **not yet integrated**.
 
 **Requirements:** Node.js 22 LTS and npm.
@@ -29,6 +54,7 @@ For the installable production PWA (including its service worker):
 
 ```powershell
 npm run build
+$env:APP_ORIGIN = 'http://localhost:3001'
 npm start
 ```
 
@@ -60,7 +86,7 @@ Browser tests currently use installed Microsoft Edge, including a mobile viewpor
 
 ### Scope and safety
 
-**Do not enter real patient information.** This is not a clinical product. There is no authentication, real EHR/FHIR ingestion, Azure AI Foundry, Microsoft Fabric, live literature, or enterprise privacy/governance integration yet. Synthetic categories are fictional and independently generated, not medical evidence. Minimum-size suppression is a demonstration safeguard, not a formal privacy guarantee against repeated-query differencing.
+**Do not enter real patient information.** This is not a clinical product. Local authentication is implemented, but real EHR/FHIR ingestion, Azure AI Foundry, Microsoft Fabric, live literature, verified clinician identity, and enterprise privacy/governance are not. Fictional visit prescriptions are documentation only, not valid prescriptions or pharmacy transmissions. Synthetic categories are independently generated, not medical evidence. Minimum-size suppression is a demonstration safeguard, not a formal privacy guarantee against repeated-query differencing.
 
 See [setup and architecture](demo/implementation.md), [five-minute walkthrough](demo/demo-script.md), and [native release roadmap](demo/native-roadmap.md).
 

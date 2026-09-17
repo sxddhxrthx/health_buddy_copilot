@@ -6,8 +6,10 @@ import { findCohort, parseFilters } from './analytics.js';
 import { answerQuestion, reviewQuestions } from './copilot.js';
 import { DATA_VERSION, MATCH_VERSION } from '../shared/contracts.js';
 import { healthRouter } from './health.js';
+import { fromNodeHeaders } from 'better-auth/node';
+import type { Runtime } from './runtime.js';
 
-export function createApp() {
+export function createApp(runtime: Runtime) {
   const app = express();
   app.disable('x-powered-by');
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
@@ -15,6 +17,7 @@ export function createApp() {
     .map((s) => s.trim())
     .filter(Boolean);
   app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Frame-Options', 'DENY');
@@ -36,7 +39,37 @@ export function createApp() {
     next();
   });
   app.use(express.json({ limit: '8kb' }));
-  app.use('/api/health-demo', healthRouter());
+  app.all('/api/auth/{*path}', async (req, res) => {
+    if (
+      !['/api/auth/sign-in/email', '/api/auth/sign-out', '/api/auth/get-session'].includes(
+        req.path,
+      ) ||
+      !['GET', 'POST'].includes(req.method)
+    ) {
+      res.status(404).json({ error: 'Authentication action unavailable.' });
+      return;
+    }
+    if (req.method === 'POST' && req.headers.origin !== runtime.baseURL) {
+      res.status(403).json({ error: 'Request origin rejected.' });
+      return;
+    }
+    const authHeaders = fromNodeHeaders(req.headers);
+    authHeaders.delete('x-forwarded-for');
+    authHeaders.delete('x-real-ip');
+    authHeaders.set('x-research-twin-client-ip', req.socket.remoteAddress ?? 'unknown');
+    const response = await runtime.auth.handler(
+      new Request(new URL(req.originalUrl, runtime.baseURL), {
+        method: req.method,
+        headers: authHeaders,
+        body: req.method === 'GET' ? undefined : JSON.stringify(req.body ?? {}),
+      }),
+    );
+    for (const cookie of response.headers.getSetCookie()) res.append('Set-Cookie', cookie);
+    res
+      .status(response.status)
+      .type('application/json')
+      .send(await response.text());
+  });
   app.get('/api/health', (_req, res) =>
     res.json({
       status: 'ok',
@@ -46,6 +79,34 @@ export function createApp() {
       copilot: 'deterministic-demo',
     }),
   );
+  app.use('/api', async (req, res, next) => {
+    const session = await runtime.auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+      query: { disableCookieCache: true },
+    });
+    if (!session || !['patient', 'doctor'].includes(session.user.role)) {
+      res.status(401).json({ error: 'Sign in to continue.' });
+      return;
+    }
+    if (req.method !== 'GET' && req.headers.origin !== runtime.baseURL) {
+      res.status(403).json({ error: 'Request origin rejected.' });
+      return;
+    }
+    res.locals.user = session.user;
+    next();
+  });
+  app.get('/api/me', (_req, res) => {
+    const { id, name, email, role } = res.locals.user;
+    res.json({ id, name, email, role });
+  });
+  app.use('/api', healthRouter(runtime));
+  app.use('/api', (_req, res, next) => {
+    if (res.locals.user.role !== 'doctor') {
+      res.status(403).json({ error: 'Doctor workspace only.' });
+      return;
+    }
+    next();
+  });
   app.get('/api/patient', (_req, res) => res.json(patient));
   app.get('/api/study', (_req, res) => res.json(getStudy()));
   app.post('/api/cohort', (req, res) => {

@@ -2,8 +2,8 @@
 
 ## Direction
 
-Research Twin demonstrates evidence-linked clinician research and a separate synthetic personal
-health workspace. Maintain one React/TypeScript experience with an Express API, delivered first as a
+Research Twin demonstrates evidence-linked reference research and authenticated synthetic patient
+and doctor workspaces. Maintain one React/TypeScript experience with an Express API, delivered first as a
 PWA, with Android/iOS packaging as a longer-term goal. This is not a clinical service.
 
 This document distinguishes the shipped baseline from future intent. An idea in the README's original
@@ -29,20 +29,35 @@ After this setup, select each implementation task through a shared issue contain
 criteria, exclusions, affected components, an owner, and a human reviewer. No additional feature
 milestone is assigned by this document.
 
+## Requested authenticated milestone
+
+The project owner selected Option A on September 17, 2026. The implementation in this working tree
+adds Better Auth, persistent SQLite, provisioned fictional patient/doctor accounts, full-record
+sharing with selected doctors, a shared-patient selector, and doctor-owned visit drafts/finalization/
+amendments. Patients see finalized visits but cannot edit them. Doctor navigation retains Current
+patient, Buddy cohort and Research study; patient navigation contains My Health only. The fixed
+Alex Morgan scenario remains an explicitly separate reference demo, not the selected patient's cohort.
+
+One-command Docker Compose initialization and reproducible source-controlled synthetic seeds are
+included. See [ADR 0002](decisions/0002-authenticated-synthetic-workspaces.md) for the scope, limitations,
+and pending teammate review/shared approval link. This is not a claim of merge or release approval.
+
 ## Future direction: separate approval required
 
 - Native Android/iOS packaging, physical-device validation, signing and store delivery follow the
   [native roadmap](../demo/native-roadmap.md); configuration alone is not a released native app.
-- Authentication, durable storage, governed cloud/AI integrations, FHIR/EHR ingestion and real-data
+- Production identity lifecycle, governed cloud/AI integrations, FHIR/EHR ingestion and real-data
   support need explicit architecture, security, privacy, and intended-use decisions first.
+- Partial disclosure, specialist-focused prioritization and shared-patient cohort matching are deferred.
 - Real OCR, arbitrary report uploads, camera/device permissions, and synchronization are not part of
   the current My Health scope.
 
 ## Non-goals and release boundaries
 
-Do not turn the prototype into a diagnostic/prescribing system or suggest that synthetic patterns are
-medical evidence. Do not blend personal records with clinician/research cohorts, connect a live model,
-or enable real data merely by changing an endpoint. Authentication, secure retention, clinical and
+Do not turn the prototype into an automated diagnostic/prescribing system or suggest that synthetic
+patterns are medical evidence. Doctor-authored fictional prescriptions are documentation only, not
+valid prescriptions or pharmacy transmissions. Do not blend personal records with research cohorts,
+connect a live model, or enable real data merely by changing an endpoint. Production secure retention, clinical and
 privacy review, and native release gates remain outstanding. Preserve the boundaries in
 [AGENTS.md](../AGENTS.md) and the existing detailed implementation guides.
 

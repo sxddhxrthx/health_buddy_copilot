@@ -3,6 +3,73 @@
   gap: 20px;
   min-width: 0;
 }
+.login-page {
+  max-width: 420px;
+  min-height: 100dvh;
+  align-content: center;
+  margin: auto;
+  padding: 32px 24px;
+}
+.login-page h1 {
+  font-size: 30px;
+  letter-spacing: 0;
+}
+.login-page form {
+  width: 100%;
+}
+.visit-content,
+.visit-content > div,
+.visit-record,
+.visit-record form,
+.health-section > form {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.visit-content h4 {
+  margin: 0;
+  font-size: 13px;
+}
+.visit-record {
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+  overflow-wrap: anywhere;
+}
+.visit-prescription {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0;
+  font-size: 12px;
+}
+.visit-prescription dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.visit-content p {
+  white-space: pre-wrap;
+}
+.visit-revision {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.my-health .health-section {
+  background: white;
+}
+.my-health .health-section button {
+  white-space: normal;
+}
+.reference-notice {
+  margin-bottom: 20px;
+}
+.reference-notice button {
+  margin-top: 12px;
+}
+@media (max-width: 760px) {
+  .top-actions .secondary span {
+    display: none;
+  }
+}
 .my-health .patient-banner {
   margin: 0;
 }

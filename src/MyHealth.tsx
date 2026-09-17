@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Activity, FileText, HeartPulse, Plus, RefreshCw } from 'lucide-react';
-import { api } from './api';
+import { api, ApiError } from './api';
+import type { Account, CareSnapshot, Person } from '../shared/care';
+import { Sharing, Visits } from './Visits';
 import {
   HEALTH_KINDS,
   GLUCOSE_CONTEXTS,
@@ -11,30 +13,10 @@ import {
   type HealthDraft,
   type HealthKind,
   type HealthRecord,
-  type HealthSession,
   type DemoReport,
 } from '../shared/health';
 import './health.css';
 
-const SESSION_KEY = 'research-twin-synthetic-session-v1';
-let opening: Promise<HealthSession> | undefined;
-function openSession() {
-  // Share the initial request across React StrictMode effect replays.
-  if (!opening) {
-    opening = (async () => {
-      const id = sessionStorage.getItem(SESSION_KEY);
-      const session = await api<HealthSession>(
-        'health-demo',
-        id ? { action: 'read', sessionId: id } : { action: 'create' },
-      );
-      sessionStorage.setItem(SESSION_KEY, session.id);
-      return session;
-    })().finally(() => {
-      opening = undefined;
-    });
-  }
-  return opening;
-}
 const dateTime = (value: string) => value.replace('T', ' · ');
 const recordName = (record: HealthDraft) => record.label || HEALTH_KINDS[record.kind].label;
 const sourceLabel = (record: HealthRecord) =>
@@ -250,14 +232,26 @@ function Trends({ records }: { records: HealthRecord[] }) {
   );
 }
 
-export function MyHealth({ online }: { online: boolean }) {
-  const [session, setSession] = useState<HealthSession | null>(null);
+export function MyHealth({
+  online,
+  account,
+  patientId,
+  onDirtyChange,
+}: {
+  online: boolean;
+  account: Account;
+  patientId?: string;
+  onDirtyChange?: (dirty: boolean) => void;
+}) {
+  const readOnly = account.role === 'doctor';
+  const [session, setSession] = useState<CareSnapshot | null>(null);
   const [reports, setReports] = useState<DemoReport[]>([]);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
+  const generation = useRef(0);
   const [retry, setRetry] = useState(0);
   const [draft, setDraft] = useState(emptyHealthDraft());
   const [editing, setEditing] = useState<string>();
@@ -274,41 +268,66 @@ export function MyHealth({ online }: { online: boolean }) {
     setLoading(true);
     setSession(null);
     setError('');
-    void Promise.all([openSession(), api<DemoReport[]>('health-demo/reports')])
-      .then(([session, reports]) => {
-        if (!cancelled) {
-          setSession(session);
-          setReports(reports);
-        }
-      })
-      .catch((error: Error) => {
-        if (!cancelled) setError(error.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const load = () => {
+      if (lock.current) return;
+      const request = ++generation.current;
+      void api<CareSnapshot>(
+        readOnly ? `care/patients/${patientId}` : 'health-demo',
+        readOnly ? undefined : { action: 'read' },
+      )
+        .then((next) => {
+          if (!cancelled && request === generation.current) {
+            setSession(next);
+            setReports(next.reports);
+            setError('');
+          }
+        })
+        .catch((error: Error) => {
+          if (!cancelled && request === generation.current) {
+            setError(error.message);
+            if (readOnly) setSession(null);
+          }
+        })
+        .finally(() => {
+          if (!cancelled && request === generation.current) setLoading(false);
+        });
+    };
+    load();
+    window.addEventListener('focus', load);
+    window.addEventListener('online', load);
     return () => {
       cancelled = true;
+      generation.current++;
+      window.removeEventListener('focus', load);
+      window.removeEventListener('online', load);
     };
-  }, [retry]);
+  }, [retry, patientId, readOnly]);
 
   async function mutate(body: Record<string, unknown>, message: string, success?: () => void) {
     if (lock.current || !session || !online) return;
     lock.current = true;
+    const request = ++generation.current;
     setBusy(true);
     setError('');
     setStatus('');
     try {
-      const next = await api<HealthSession>('health-demo', {
-        ...body,
-        sessionId: session.id,
-        syntheticOnly: true,
-      });
+      const next = await api<CareSnapshot>(
+        readOnly ? `care/patients/${patientId}/visits` : 'health-demo',
+        {
+          ...body,
+          syntheticOnly: true,
+        },
+      );
+      if (request !== generation.current) return;
       setSession(next);
       setStatus(message);
       success?.();
     } catch (error) {
-      setError((error as Error).message);
+      if (request === generation.current) {
+        setError((error as Error).message);
+        if (readOnly && error instanceof ApiError && [403, 404].includes(error.status))
+          setSession(null);
+      }
     } finally {
       lock.current = false;
       setBusy(false);
@@ -342,10 +361,12 @@ export function MyHealth({ online }: { online: boolean }) {
     <div className="my-health">
       <section className="patient-banner">
         <div className="patient-identity">
-          <div className="avatar">ST</div>
+          <div className="avatar">
+            <HeartPulse size={22} />
+          </div>
           <div>
-            <h2>Sam Taylor</h2>
-            <p>SYN-USER-001 · Personal health demo persona · January 2026</p>
+            <h2>{session?.patient.name ?? 'Patient records'}</h2>
+            <p>{session?.patient.persona} · Synthetic persona · January 2026</p>
           </div>
         </div>
         <span className="pill">Synthetic only</span>
@@ -353,17 +374,18 @@ export function MyHealth({ online }: { online: boolean }) {
       <div className="notice">
         <strong>Practice with fictional data only. Do not enter real health information.</strong>
         <p>
-          No sign-in, actual OCR or real uploads. Records are held in server memory for up to 8
-          hours and disappear on server restart. Only a demo session ID is stored in this browser
-          tab, allowing reloads; storage is not an account or secure health vault. No cross-device
-          sync. Records never enter clinician matching or research cohorts.
+          Records are stored in the local demo database. No actual OCR or real uploads.
+          {readOnly
+            ? ' Patient-entered records are read-only and not clinically verified.'
+            : ' Only you can change your personal entries. Finalized doctor visits cannot be edited or deleted here.'}{' '}
+          Personal records never enter reference matching or research cohorts.
         </p>
       </div>
       {error && (
         <div className="error-banner" role="alert">
           <span>{error}</span>
           <button disabled={busy || !online} onClick={() => setRetry((n) => n + 1)}>
-            Retry My Health
+            {readOnly ? 'Retry patient records' : 'Retry My Health'}
           </button>
         </div>
       )}
@@ -373,47 +395,36 @@ export function MyHealth({ online }: { online: boolean }) {
       {loading ? (
         <p role="status">Loading personal health demo…</p>
       ) : !session ? (
-        <button
-          className="primary"
-          disabled={!online}
-          onClick={() => {
-            try {
-              sessionStorage.removeItem(SESSION_KEY);
-              setRetry((n) => n + 1);
-            } catch {
-              setError('Browser session storage is unavailable. Enable it to use this demo.');
-            }
-          }}
-        >
-          Start a new demo session
-        </button>
+        <p>No patient records are available. Check your connection and access.</p>
       ) : (
         <>
           <div className="health-actions">
             <span>
               {records.length} synthetic records · demo-local dates (no timezone conversion)
             </span>
-            <button
-              className="secondary"
-              disabled={disabled}
-              onClick={() => {
-                if (
-                  window.confirm(
-                    'Reset this demo session? All added entries and imported results will be removed.',
+            {!readOnly && (
+              <button
+                className="secondary"
+                disabled={disabled}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      'Reset your fictional personal entries? Added entries and imports will be removed. Doctor visits and sharing choices will be kept.',
+                    )
                   )
-                )
-                  void mutate({ action: 'reset' }, 'Demo reset to seeded records.', () => {
-                    clearEntry();
-                    setExtracted(null);
-                    setConfirmed(false);
-                    setSearch('');
-                    setFilter('all');
-                  });
-              }}
-            >
-              <RefreshCw size={16} />
-              Reset demo records
-            </button>
+                    void mutate({ action: 'reset' }, 'Demo reset to seeded records.', () => {
+                      clearEntry();
+                      setExtracted(null);
+                      setConfirmed(false);
+                      setSearch('');
+                      setFilter('all');
+                    });
+                }}
+              >
+                <RefreshCw size={16} />
+                Reset demo records
+              </button>
+            )}
           </div>
           <section className="health-summary" aria-label="Latest health readings">
             {(['glucose', 'bp', 'walking', 'running'] as const).map((kind) => {
@@ -431,193 +442,221 @@ export function MyHealth({ online }: { online: boolean }) {
               );
             })}
           </section>
+          <Visits
+            visits={session.visits}
+            account={account}
+            disabled={disabled}
+            mutate={mutate}
+            onDirtyChange={onDirtyChange}
+          />
+          {!readOnly && <Sharing disabled={disabled} />}
           <div className="health-columns">
-            <form
-              className="card health-section"
-              ref={formRef}
-              aria-label="Manual health entry"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!fictional) return;
-                try {
-                  const record = parseHealthDraft(draft);
-                  void mutate(
-                    { action: 'save', record, recordId: editing },
-                    editing ? 'Demo entry updated.' : 'Demo entry saved.',
-                    clearEntry,
-                  );
-                } catch (error) {
-                  setError((error as Error).message);
-                }
-              }}
-            >
-              <h2>
-                <Plus size={18} />
-                {editing ? 'Edit health entry' : 'Add a daily health entry'}
-              </h2>
-              <p>
-                Manual entry · fictional values only. Validation checks format, not medical meaning.
-              </p>
-              <fieldset disabled={disabled}>
-                <EntryFields
-                  draft={draft}
-                  change={(draft) => {
-                    setDraft(draft);
-                    setFictional(false);
-                  }}
-                  fixedKind={!!editing}
-                />
-                <label className="health-check">
-                  <input
-                    type="checkbox"
-                    required
-                    checked={fictional}
-                    onChange={(e) => setFictional(e.target.checked)}
+            {!readOnly && (
+              <form
+                className="card health-section"
+                ref={formRef}
+                aria-label="Manual health entry"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!fictional) return;
+                  try {
+                    const record = parseHealthDraft(draft);
+                    void mutate(
+                      { action: 'save', record, recordId: editing },
+                      editing ? 'Demo entry updated.' : 'Demo entry saved.',
+                      clearEntry,
+                    );
+                  } catch (error) {
+                    setError((error as Error).message);
+                  }
+                }}
+              >
+                <h2>
+                  <Plus size={18} />
+                  {editing ? 'Edit health entry' : 'Add a daily health entry'}
+                </h2>
+                <p>
+                  Manual entry · fictional values only. Validation checks format, not medical
+                  meaning.
+                </p>
+                <fieldset disabled={disabled}>
+                  <EntryFields
+                    draft={draft}
+                    change={(draft) => {
+                      setDraft(draft);
+                      setFictional(false);
+                    }}
+                    fixedKind={!!editing}
                   />
-                  I am entering fictional demo data only.
-                </label>
-                <div className="health-actions">
-                  <button className="primary" disabled={!fictional} type="submit">
-                    {editing ? 'Save changes' : 'Save demo entry'}
-                  </button>
-                  {editing && (
-                    <button type="button" className="secondary" onClick={clearEntry}>
-                      Cancel edit
+                  <label className="health-check">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={fictional}
+                      onChange={(e) => setFictional(e.target.checked)}
+                    />
+                    I am entering fictional demo data only.
+                  </label>
+                  <div className="health-actions">
+                    <button className="primary" disabled={!fictional} type="submit">
+                      {editing ? 'Save changes' : 'Save demo entry'}
                     </button>
-                  )}
-                </div>
-              </fieldset>
-            </form>
+                    {editing && (
+                      <button type="button" className="secondary" onClick={clearEntry}>
+                        Cancel edit
+                      </button>
+                    )}
+                  </div>
+                </fieldset>
+              </form>
+            )}
             <Trends records={records} />
           </div>
-          <section
-            className="card health-section"
-            ref={reportRef}
-            aria-label="Synthetic report library"
-          >
-            <h2>
-              <FileText size={18} />
-              Report library & simulated scanning
-            </h2>
-            <p>
-              Bundled fictional samples only. No camera or file upload is enabled. “Simulate
-              extraction” loads predefined fields, not OCR.
-            </p>
-            <fieldset disabled={disabled}>
-              <label>
-                Sample report
-                <select value={reportId} onChange={(e) => chooseReport(e.target.value)}>
-                  {reports.map((report) => (
-                    <option key={report.id} value={report.id}>
-                      {report.title}
-                      {session.importedReportIds.includes(report.id) ? ' · imported' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {selectedReport && (
-                <div className="health-columns report-review">
-                  <div>
-                    <h3>Original synthetic sample · {selectedReport.id}</h3>
-                    <pre className="health-report">{selectedReport.original}</pre>
-                    <button
-                      className="secondary"
-                      type="button"
-                      disabled={imported}
-                      onClick={() => {
-                        setExtracted(selectedReport.fields.map((field) => ({ ...field.draft })));
-                        setConfirmed(false);
-                        setStatus('Simulated fields ready. Review and correct before saving.');
-                      }}
-                    >
-                      Simulate extraction
-                    </button>
-                    {imported && (
-                      <p role="status">
-                        Already imported. Edit or delete individual results in the timeline. Reset
-                        the demo to import again.
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    {!extracted ? (
-                      <p>
-                        Preview the sample, then simulate extraction. Nothing is added to your
-                        records until you confirm.
-                      </p>
-                    ) : (
-                      <form
-                        aria-label="Review simulated extraction"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          if (!confirmed) return;
-                          try {
-                            const records = extracted.map(parseHealthDraft);
-                            void mutate(
-                              { action: 'import', reportId, records, confirmed: true },
-                              'Report results saved after user review. Not clinically verified.',
-                              () => {
-                                setExtracted(null);
-                                setConfirmed(false);
-                              },
-                            );
-                          } catch (error) {
-                            setError((error as Error).message);
-                          }
+          {!readOnly && (
+            <section
+              className="card health-section"
+              ref={reportRef}
+              aria-label="Synthetic report library"
+            >
+              <h2>
+                <FileText size={18} />
+                Report library & simulated scanning
+              </h2>
+              <p>
+                Bundled fictional samples only. No camera or file upload is enabled. “Simulate
+                extraction” loads predefined fields, not OCR.
+              </p>
+              <fieldset disabled={disabled}>
+                <label>
+                  Sample report
+                  <select value={reportId} onChange={(e) => chooseReport(e.target.value)}>
+                    {reports.map((report) => (
+                      <option key={report.id} value={report.id}>
+                        {report.title}
+                        {session.importedReportIds.includes(report.id) ? ' · imported' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {selectedReport && (
+                  <div className="health-columns report-review">
+                    <div>
+                      <h3>Original synthetic sample · {selectedReport.id}</h3>
+                      <pre className="health-report">{selectedReport.original}</pre>
+                      <button
+                        className="secondary"
+                        type="button"
+                        disabled={imported}
+                        onClick={() => {
+                          setExtracted(selectedReport.fields.map((field) => ({ ...field.draft })));
+                          setConfirmed(false);
+                          setStatus('Simulated fields ready. Review and correct before saving.');
                         }}
                       >
-                        <h3>Review extracted fields · simulation</h3>
-                        {extracted.map((draft, index) => (
-                          <div className="health-extraction" key={`${reportId}-${index}`}>
-                            <p className="notice">{selectedReport.fields[index].reviewNote}</p>
-                            <EntryFields
-                              draft={draft}
-                              fixedKind
-                              change={(draft) => {
-                                setExtracted(
-                                  extracted.map((old, i) => (i === index ? draft : old)),
-                                );
+                        Simulate extraction
+                      </button>
+                      {imported && (
+                        <p role="status">
+                          Already imported. Edit or delete individual results in the timeline. Reset
+                          the demo to import again.
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      {!extracted ? (
+                        <p>
+                          Preview the sample, then simulate extraction. Nothing is added to your
+                          records until you confirm.
+                        </p>
+                      ) : (
+                        <form
+                          aria-label="Review simulated extraction"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            if (!confirmed) return;
+                            try {
+                              const records = extracted.map(parseHealthDraft);
+                              void mutate(
+                                { action: 'import', reportId, records, confirmed: true },
+                                'Report results saved after user review. Not clinically verified.',
+                                () => {
+                                  setExtracted(null);
+                                  setConfirmed(false);
+                                },
+                              );
+                            } catch (error) {
+                              setError((error as Error).message);
+                            }
+                          }}
+                        >
+                          <h3>Review extracted fields · simulation</h3>
+                          {extracted.map((draft, index) => (
+                            <div className="health-extraction" key={`${reportId}-${index}`}>
+                              <p className="notice">{selectedReport.fields[index].reviewNote}</p>
+                              <EntryFields
+                                draft={draft}
+                                fixedKind
+                                change={(draft) => {
+                                  setExtracted(
+                                    extracted.map((old, i) => (i === index ? draft : old)),
+                                  );
+                                  setConfirmed(false);
+                                }}
+                              />
+                            </div>
+                          ))}
+                          <label className="health-check">
+                            <input
+                              type="checkbox"
+                              checked={confirmed}
+                              required
+                              onChange={(event) => setConfirmed(event.target.checked)}
+                            />
+                            I reviewed all fields against this synthetic sample. This is not
+                            clinical verification.
+                          </label>
+                          <div className="health-actions">
+                            <button
+                              className="primary"
+                              disabled={!confirmed || imported}
+                              type="submit"
+                            >
+                              Confirm and save report
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary"
+                              onClick={() => {
+                                setExtracted(null);
                                 setConfirmed(false);
                               }}
-                            />
+                            >
+                              Cancel extraction
+                            </button>
                           </div>
-                        ))}
-                        <label className="health-check">
-                          <input
-                            type="checkbox"
-                            checked={confirmed}
-                            required
-                            onChange={(event) => setConfirmed(event.target.checked)}
-                          />
-                          I reviewed all fields against this synthetic sample. This is not clinical
-                          verification.
-                        </label>
-                        <div className="health-actions">
-                          <button
-                            className="primary"
-                            disabled={!confirmed || imported}
-                            type="submit"
-                          >
-                            Confirm and save report
-                          </button>
-                          <button
-                            type="button"
-                            className="secondary"
-                            onClick={() => {
-                              setExtracted(null);
-                              setConfirmed(false);
-                            }}
-                          >
-                            Cancel extraction
-                          </button>
-                        </div>
-                      </form>
-                    )}
+                        </form>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </fieldset>
-          </section>
+                )}
+              </fieldset>
+            </section>
+          )}
+          {readOnly && session.importedReportIds.length > 0 && (
+            <section className="health-section" ref={reportRef} aria-label="Shared source reports">
+              <h2>Shared source reports</h2>
+              {reports
+                .filter((report) => session.importedReportIds.includes(report.id))
+                .map((report) => (
+                  <details key={report.id} open={reportId === report.id}>
+                    <summary>
+                      {report.title} / {report.id}
+                    </summary>
+                    <pre className="health-report">{report.original}</pre>
+                  </details>
+                ))}
+            </section>
+          )}
           <section className="card health-section" aria-label="Health record timeline">
             <h2>
               <Activity size={18} />
@@ -679,44 +718,144 @@ export function MyHealth({ online }: { online: boolean }) {
                       </button>
                     )}
                   </div>
-                  <div className="health-actions">
-                    <button
-                      className="secondary"
-                      disabled={disabled}
-                      onClick={() => {
-                        setDraft({ ...record });
-                        setEditing(record.id);
-                        setFictional(false);
-                        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        formRef.current
-                          ?.querySelector<HTMLInputElement>('input')
-                          ?.focus({ preventScroll: true });
-                      }}
-                    >
-                      Edit entry
-                    </button>
-                    <button
-                      className="secondary"
-                      disabled={disabled}
-                      onClick={() => {
-                        if (window.confirm(`Delete this synthetic ${recordName(record)} entry?`))
-                          void mutate(
-                            { action: 'delete', recordId: record.id },
-                            'Demo entry deleted.',
-                            () => {
-                              if (editing === record.id) clearEntry();
-                            },
-                          );
-                      }}
-                    >
-                      Delete entry
-                    </button>
-                  </div>
+                  {!readOnly && (
+                    <div className="health-actions">
+                      <button
+                        className="secondary"
+                        disabled={disabled}
+                        onClick={() => {
+                          setDraft({ ...record });
+                          setEditing(record.id);
+                          setFictional(false);
+                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          formRef.current
+                            ?.querySelector<HTMLInputElement>('input')
+                            ?.focus({ preventScroll: true });
+                        }}
+                      >
+                        Edit entry
+                      </button>
+                      <button
+                        className="secondary"
+                        disabled={disabled}
+                        onClick={() => {
+                          if (window.confirm(`Delete this synthetic ${recordName(record)} entry?`))
+                            void mutate(
+                              { action: 'delete', recordId: record.id },
+                              'Demo entry deleted.',
+                              () => {
+                                if (editing === record.id) clearEntry();
+                              },
+                            );
+                        }}
+                      >
+                        Delete entry
+                      </button>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
           </section>
         </>
+      )}
+    </div>
+  );
+}
+
+export function DoctorWorkspace({
+  account,
+  online,
+  dirty,
+  onDirtyChange,
+}: {
+  account: Account;
+  online: boolean;
+  dirty: boolean;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
+  const [patients, setPatients] = useState<Person[]>([]);
+  const [selected, setSelected] = useState('');
+  const [search, setSearch] = useState('');
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      void api<Person[]>('care/patients')
+        .then((value) => {
+          if (!cancelled) {
+            setPatients(value);
+            setError('');
+            setSelected((id) => (value.some((person) => person.id === id) ? id : ''));
+          }
+        })
+        .catch((error: Error) => {
+          if (!cancelled) {
+            setPatients([]);
+            setSelected('');
+            setError(error.message);
+          }
+        });
+    };
+    load();
+    window.addEventListener('focus', load);
+    window.addEventListener('online', load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', load);
+      window.removeEventListener('online', load);
+    };
+  }, [retry]);
+  return (
+    <div className="my-health">
+      <section className="health-section" aria-label="Shared patient selection">
+        <label>
+          Search shared patients
+          <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} />
+        </label>
+        <label>
+          Current patient
+          <select
+            value={selected}
+            disabled={!online}
+            onChange={(event) => {
+              if (!dirty || window.confirm('Discard unsaved visit changes and switch patients?'))
+                setSelected(event.target.value);
+            }}
+          >
+            <option value="">Choose a shared patient</option>
+            {patients
+              .filter(
+                (person) =>
+                  person.id === selected ||
+                  `${person.name} ${person.persona}`.toLowerCase().includes(search.toLowerCase()),
+              )
+              .map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name} / {person.persona}
+                </option>
+              ))}
+          </select>
+        </label>
+        {error && (
+          <div role="alert" className="error-banner">
+            {error}
+            <button disabled={!online} onClick={() => setRetry((value) => value + 1)}>
+              Retry patient list
+            </button>
+          </div>
+        )}
+        {!patients.length && !error && <p>No patients are currently sharing with you.</p>}
+      </section>
+      {selected && (
+        <MyHealth
+          key={selected}
+          account={account}
+          online={online}
+          patientId={selected}
+          onDirtyChange={onDirtyChange}
+        />
       )}
     </div>
   );

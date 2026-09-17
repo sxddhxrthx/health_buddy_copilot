@@ -1,35 +1,14 @@
-import test, { before, after } from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import type { AddressInfo } from 'node:net';
-import { createApp } from '../server/app.js';
+import { testApplication } from './helpers.js';
+import type { CareSnapshot } from '../shared/care.js';
 import { demoReports, seedHealthRecords } from '../server/health-data.js';
-import {
-  emptyHealthDraft,
-  parseHealthDraft,
-  trendKey,
-  type HealthSession,
-  type HealthKind,
-} from '../shared/health.js';
+import { emptyHealthDraft, parseHealthDraft, trendKey, type HealthKind } from '../shared/health.js';
 
-const server = createApp().listen(0, '127.0.0.1');
-let base = '';
-before(async () => {
-  if (!server.listening) await new Promise<void>((resolve) => server.once('listening', resolve));
-  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
-});
-after(
-  () =>
-    new Promise<void>((resolve, reject) =>
-      server.close((error) => (error ? reject(error) : resolve())),
-    ),
-);
-const post = (body: unknown) =>
-  fetch(`${base}/health-demo`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-const create = async (): Promise<HealthSession> => (await post({ action: 'create' })).json();
+const app = await testApplication();
+after(app.close);
+const post = (body: unknown) => app.request('sam@patient.example', 'health-demo', body);
+const create = async (): Promise<CareSnapshot> => (await post({ action: 'read' })).json();
 const value = (kind: HealthKind = 'glucose') => ({ ...emptyHealthDraft(kind), value: '100' });
 
 test('manual health parser supports each record category and canonicalizes numeric entries', () => {
@@ -96,16 +75,17 @@ test('trends keep units, glucose contexts and named laboratory tests separate', 
   for (const record of seedHealthRecords())
     assert.deepEqual(parseHealthDraft(record), parseHealthDraft(parseHealthDraft(record)));
 });
-test('demo records survive reads; edits, deletes and reset remain isolated from other sessions and clinician data', async () => {
+test('demo records survive reads; edits, deletes and reset remain isolated from other patients and reference data', async () => {
   const first = await create(),
-    second = await create();
-  const patientBefore = await (await fetch(`${base}/patient`)).json();
-  const request = (body: Record<string, unknown>) =>
-    post({ sessionId: first.id, syntheticOnly: true, ...body });
+    second: CareSnapshot = await (
+      await app.request('jordan@patient.example', 'health-demo', { action: 'read' })
+    ).json();
+  const patientBefore = await (await app.request('avery@doctor.example', 'patient')).json();
+  const request = (body: Record<string, unknown>) => post({ syntheticOnly: true, ...body });
   const response = await request({ action: 'save', record: value() });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('cache-control'), 'no-store');
-  let state: HealthSession = await response.json();
+  let state: CareSnapshot = await response.json();
   const recordId = state.records.at(-1)!.id;
   assert.equal(state.records.length, first.records.length + 1);
   assert.equal(state.records.at(-1)!.source, 'manual');
@@ -116,26 +96,38 @@ test('demo records survive reads; edits, deletes and reset remain isolated from 
   ).json();
   assert.equal(state.records.at(-1)!.value, '109');
   assert.equal(
-    (await post({ action: 'delete', sessionId: second.id, syntheticOnly: true, recordId })).status,
-    400,
+    (
+      await app.request('jordan@patient.example', 'health-demo', {
+        action: 'delete',
+        syntheticOnly: true,
+        recordId,
+      })
+    ).status,
+    404,
   );
   state = await (await request({ action: 'delete', recordId })).json();
   assert.equal(state.records.length, first.records.length);
   await request({ action: 'save', record: value('walking') });
   state = await (await request({ action: 'reset' })).json();
-  assert.deepEqual(state.records, seedHealthRecords());
   assert.deepEqual(
-    (await (await post({ action: 'read', sessionId: second.id })).json()).records,
+    state.records.map(({ id: _id, ...record }) => record),
+    seedHealthRecords().map(({ id: _id, ...record }) => record),
+  );
+  assert.deepEqual(
+    (await (await app.request('jordan@patient.example', 'health-demo', { action: 'read' })).json())
+      .records,
     second.records,
   );
-  assert.deepEqual(await (await fetch(`${base}/patient`)).json(), patientBefore);
+  assert.deepEqual(
+    await (await app.request('avery@doctor.example', 'patient')).json(),
+    patientBefore,
+  );
 });
 test('only bundled simulated reports can be imported, with review, atomic validation and duplicate protection', async () => {
   const session = await create();
   const report = demoReports[0];
   const body = {
     action: 'import',
-    sessionId: session.id,
     syntheticOnly: true,
     reportId: report.id,
     confirmed: true,
@@ -150,36 +142,29 @@ test('only bundled simulated reports can be imported, with review, atomic valida
   ])
     assert.equal((await post({ ...body, ...change })).status, 400);
   assert.equal(
-    (await (await post({ action: 'read', sessionId: session.id })).json()).records.length,
+    (await (await post({ action: 'read' })).json()).records.length,
     session.records.length,
   );
   const records = body.records.map((r) => ({ ...r }));
   records[1].referenceRange = '4.0–5.6';
   const response = await post({ ...body, records });
   assert.equal(response.status, 200);
-  const state: HealthSession = await response.json();
+  const state: CareSnapshot = await response.json();
   assert.equal(state.records.at(-1)!.referenceRange, '4.0–5.6');
   assert.equal(state.records.at(-1)!.source, 'simulated-report');
   assert.equal(state.records.at(-1)!.reportId, report.id);
   assert.equal((await post(body)).status, 400);
+  for (const record of state.records.filter((record) => record.reportId === report.id))
+    await post({ action: 'delete', recordId: record.id, syntheticOnly: true });
+  assert.equal((await post(body)).status, 400);
   assert.equal(
-    (await fetch(`${base}/health-demo/reports`)).headers.get('cache-control'),
+    (await app.request('sam@patient.example', 'health-demo/reports')).headers.get('cache-control'),
     'no-store',
   );
 });
-test('demo API rejects missing sessions, missing fictional confirmation and arbitrary uploads', async () => {
-  assert.equal((await post({ action: 'read', sessionId: 'unknown' })).status, 404);
-  const session = await create();
-  assert.equal(
-    (await post({ action: 'save', sessionId: session.id, record: value() })).status,
-    400,
-  );
-  assert.equal(
-    (await post({ action: 'upload', sessionId: session.id, syntheticOnly: true })).status,
-    400,
-  );
-  assert.equal(
-    (await fetch(`${base}/health-demo/upload`, { method: 'POST', body: 'pretend file' })).status,
-    404,
-  );
+test('demo API rejects missing authentication, missing fictional confirmation and arbitrary uploads', async () => {
+  assert.equal((await app.request(null, 'health-demo', { action: 'read' })).status, 401);
+  assert.equal((await post({ action: 'save', record: value() })).status, 400);
+  assert.equal((await post({ action: 'upload', syntheticOnly: true })).status, 400);
+  assert.equal((await app.request('avery@doctor.example', 'health-demo/upload', {})).status, 404);
 });

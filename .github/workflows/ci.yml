@@ -52,11 +52,11 @@ jobs:
           }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git diff --exit-code
-      - name: Retain failure traces
+      - name: Retain synthetic failure screenshots
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-failure-traces
-          path: test-results/
+          name: browser-failure-screenshots
+          path: test-results/**/*.png
           if-no-files-found: ignore
           retention-days: 7

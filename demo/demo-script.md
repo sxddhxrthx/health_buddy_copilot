@@ -1,6 +1,9 @@
 # Five-minute demo
 
-Start `npm run build` then `npm start`; open http://localhost:3001. Use a fresh browser session for the initial state. The Guided demo button provides on-screen stage reminders.
+Run `npm run demo` and open http://localhost:8080, or use the Compose setup in CONTRIBUTING.md.
+Sign in as a provisioned doctor, open Buddy cohort, then View reference patient. The walkthrough
+below uses only Alex Morgan's reference scenario, not a shared patient's personal records.
+The Guided demo button provides on-screen stage reminders.
 
 ## 0:00–0:40 · The ambiguity
 

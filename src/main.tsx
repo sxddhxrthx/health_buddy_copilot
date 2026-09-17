@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import Session from './Session';
 import './styles.css';
 
 class ErrorBoundary extends React.Component<React.PropsWithChildren, { failed: boolean }> {
@@ -23,7 +23,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, { failed: b
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      <Session />
     </ErrorBoundary>
   </React.StrictMode>,
 );

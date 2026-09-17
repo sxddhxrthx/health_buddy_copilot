@@ -4,6 +4,10 @@ The PWA is the first delivery vehicle, not the final platform limit. Capacitor c
 
 ## Implemented foundation
 
+The authenticated SQLite milestone is same-origin web delivery only. Existing Capacitor configuration
+does not validate native login, cookies, secure storage, or identity-provider redirects. Those remain
+separate release work; setting VITE_API_BASE_URL alone is not sufficient for authenticated native use.
+
 - Capacitor core and CLI dependencies, app identity and `webDir: dist`.
 - Responsive layouts, mobile navigation, viewport safe-area handling and touch interactions.
 - API client supports a build-time `VITE_API_BASE_URL` rather than assuming the device hosts Express.

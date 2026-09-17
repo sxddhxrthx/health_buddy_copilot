@@ -1,0 +1,42 @@
+services:
+  initialize:
+    image: research-twin-local
+    build: .
+    user: '0:0'
+    command: ['node', 'scripts/init-volume.mjs']
+    network_mode: none
+    volumes:
+      - demo-data:/data
+  app:
+    image: research-twin-local
+    build: .
+    depends_on:
+      initialize:
+        condition: service_completed_successfully
+    environment:
+      APP_ORIGIN: http://localhost:${DEMO_PORT:-8080}
+    ports:
+      - '127.0.0.1:${DEMO_PORT:-8080}:3001'
+    volumes:
+      - demo-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3001/api/health').then(response => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+volumes:
+  demo-data:

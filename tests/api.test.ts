@@ -1,31 +1,17 @@
-import test, { before, after } from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { createApp } from '../server/app.js';
 import { DEFAULT_FILTERS, PROMPTS } from '../shared/contracts.js';
-import type { AddressInfo } from 'node:net';
+import { testApplication } from './helpers.js';
 
-const server = createApp().listen(0, '127.0.0.1');
-let base = '';
-before(async () => {
-  if (!server.listening) await new Promise<void>((resolve) => server.once('listening', resolve));
-  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
-});
-after(
-  () =>
-    new Promise<void>((resolve, reject) =>
-      server.close((error) => (error ? reject(error) : resolve())),
-    ),
-);
-const post = (path: string, body: unknown) =>
-  fetch(`${base}/${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+const app = await testApplication();
+const base = app.base;
+after(app.close);
+const get = (path: string) => app.request('avery@doctor.example', path);
+const post = (path: string, body: unknown) => app.request('avery@doctor.example', path, body);
 
 test('patient and health API return synthetic data and no-store headers', async () => {
   for (const path of ['health', 'patient', 'study']) {
-    const r = await fetch(`${base}/${path}`);
+    const r = await get(path);
     assert.equal(r.status, 200);
     assert.equal(r.headers.get('cache-control'), 'no-store');
     assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
@@ -69,7 +55,7 @@ test('review brief includes evidence appendix, missingness and human review boun
   assert.doesNotMatch(markdown, /SYN-HIST/);
 });
 test('unrecognized API route is JSON 404; oversized and invalid JSON requests are bounded', async () => {
-  assert.equal((await fetch(`${base}/historical-patients`)).status, 404);
+  assert.equal((await get('historical-patients')).status, 404);
   assert.equal((await post('copilot', { question: 'x'.repeat(10000) })).status, 413);
   const r = await fetch(`${base}/cohort`, {
     method: 'POST',

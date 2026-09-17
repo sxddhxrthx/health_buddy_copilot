@@ -20,14 +20,21 @@ instruction files as entry points, not competing copies of these rules.
 
 - Research Twin is a synthetic-data prototype, not a clinical product. Never introduce real health
   information, credentials, real patient uploads, or compliance claims in code, fixtures, logs, or docs.
-- Keep My Health's fictional Sam Taylor separate from the clinician workspace's Alex Morgan and
-  historical research cohorts. Personal records must not feed cohort matching or research outputs.
+- Authenticated patients own their personal entries. Doctors access only patients with an active
+  sharing grant, cannot edit personal entries, and author separate visit records. Patients cannot
+  alter doctor records; finalized visits are amended with preserved revisions. See the requested
+  scope in [ADR 0002](docs/decisions/0002-authenticated-synthetic-workspaces.md); teammate review
+  and a shared approval link remain outstanding. Partial sharing and specialty filtering are deferred.
+- Keep shared patient records separate from Alex Morgan's fixed reference scenario and historical
+  research cohorts. Personal records must not feed cohort matching or research outputs.
 - Report scanning uses two bundled synthetic reports and predefined extraction fields. No actual OCR,
   camera access, or arbitrary upload. Preserve explicit review, source links, atomic validation,
   duplicate-import rejection, and fictional-only acknowledgement.
-- My Health uses bounded server-memory sessions: eight hours from creation, 200 sessions maximum,
-  500 records per session. Only the session ID goes in sessionStorage. This is not authentication,
-  durable storage, a secure health vault, or cross-device synchronization.
+- Better Auth sessions expire after eight hours and have a 200-session demo capacity. SQLite holds
+  persistent synthetic records, with 500 personal entries and 200 visits per patient, at most 100
+  visit revisions. Session expiry does not delete records. Use server-authorized HttpOnly cookies;
+  never persist credentials or records in browser storage. Generated secrets, sessions and writable
+  databases stay outside Git. Do not replace local synthetic storage with real-data use.
 - Keep health trend series separate by units, named tests, and glucose context. Dates are demo-local;
   do not silently convert units or timezones or add clinical interpretation.
 - The in-app Copilot is a deterministic, exact-allowlist template demo, not a connected model.
@@ -67,9 +74,12 @@ git diff --check
 ```
 
 `check` type-checks, builds the production PWA, and runs unit/API tests. Browser tests require
-Microsoft Edge and the fresh production build; Playwright starts the server on port 3001. Confirm
-any reused local server belongs to this checkout and is current; do not terminate another developer's
-server. CI starts its own server. See CONTRIBUTING.md for setup and limitations.
+Microsoft Edge and the fresh production build; Playwright starts an isolated server on port 3001
+with an ignored SQLite test database. It must not reuse the developer's server or data. Do not
+terminate another developer's server. Network traces are disabled to avoid retaining credentials
+and session cookies; only synthetic screenshots are retained. Validate Compose with
+`docker compose config --quiet`; startup/restart checks require a running Linux-container engine.
+See CONTRIBUTING.md for setup and limitations.
 
 Inspect the final diff, including new files. Report exact commands and observed results, checks not
 run, limitations, and outstanding work. Do not claim CI, deployment, physical-device testing, or

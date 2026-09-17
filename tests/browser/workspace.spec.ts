@@ -1,11 +1,17 @@
 import { test, expect } from '@playwright/test';
+import { openReference, signIn } from './helpers';
+
+test.beforeEach(async ({ page }) => {
+  await signIn(page, 'avery@doctor.example');
+  await page.goto('/');
+  await openReference(page);
+});
 
 test('five-minute journey: patient, cohort, provenance, refusal, review and study', async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible();
   await page.getByRole('button', { name: 'Open evidence PAT-003' }).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
@@ -45,7 +51,6 @@ test('five-minute journey: patient, cohort, provenance, refusal, review and stud
 test('changing filters clears stale results and recalculates deterministically', async ({
   page,
 }) => {
-  await page.goto('/');
   await page.getByRole('button', { name: 'Find comparable cohort', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Why these cases?' })).toBeVisible();
   const baseline = await page.locator('.cohort-ring strong').innerText();
@@ -62,12 +67,12 @@ test('API failure has retry; offline reload serves shell without caching patient
   page,
   context,
 }) => {
-  await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible();
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
   await page.reload();
+  await openReference(page);
   await expect(page.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible();
   await context.setOffline(true);
   await page.reload();
@@ -85,6 +90,7 @@ test('API failure has retry; offline reload serves shell without caching patient
   expect(cached.some((url) => url.includes('/api/'))).toBe(false);
   await context.setOffline(false);
   await page.getByRole('button', { name: 'Retry connection' }).click();
+  await openReference(page);
   await expect(page.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible();
 });
 
@@ -131,7 +137,6 @@ test('install manifest, icons, narrow-cohort empty state and keyboard dialog are
       },
     }),
   );
-  await page.goto('/');
   await page.getByRole('button', { name: 'Find comparable cohort', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Privacy boundary reached' })).toBeVisible();
   await expect(page.locator('.cohort-ring')).not.toBeVisible();

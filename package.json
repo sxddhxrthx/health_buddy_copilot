@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "concurrently -k -n api,web \"tsx watch server/index.ts\" \"vite --host 0.0.0.0\"",
     "build": "tsc --noEmit && vite build",
+    "build:server": "tsc --project tsconfig.server.json",
     "start": "tsx server/index.ts",
+    "demo": "npm run build && node --import tsx scripts/start-demo.mjs",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "check": "npm run build && npm test",
+    "check": "npm run build && npm run build:server && npm test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "icons": "node scripts/generate-icons.mjs",
@@ -19,6 +21,8 @@
   },
   "dependencies": {
     "@capacitor/core": "^7.0.0",
+    "better-auth": "1.7.4",
+    "better-sqlite3": "12.11.1",
     "express": "^5.1.0",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
@@ -27,6 +31,7 @@
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
     "@playwright/test": "^1.55.0",
+    "@types/better-sqlite3": "9.6.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",

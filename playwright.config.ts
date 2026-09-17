@@ -5,11 +5,12 @@ export default defineConfig({
   // Bound parallel browser startup/precache traffic on developer laptops.
   workers: 2,
   expect: { timeout: 10000 },
-  use: { baseURL: 'http://127.0.0.1:3001', trace: 'retain-on-failure' },
+  use: { baseURL: 'http://127.0.0.1:3001', trace: 'off', screenshot: 'only-on-failure' },
   webServer: {
-    command: 'npm start',
+    command: 'node --import tsx tests/browser/server.ts',
     url: 'http://127.0.0.1:3001/api/health',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
+    env: { APP_ORIGIN: 'http://127.0.0.1:3001', RESEARCH_TWIN_DATA_DIR: '.local/e2e' },
   },
   projects: [
     { name: 'desktop-edge', use: { ...devices['Desktop Edge'], channel: 'msedge' } },

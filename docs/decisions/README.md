@@ -18,6 +18,7 @@ The initial baseline records already implemented behavior, not a claim of new fe
 
 ## Index
 
-| Record                                                                     | Status            | Scope                                              |
-| -------------------------------------------------------------------------- | ----------------- | -------------------------------------------------- |
-| [0001: Synthetic prototype baseline](0001-synthetic-prototype-baseline.md) | Existing baseline | Current stack, data separation and demo boundaries |
+| Record                                                                                 | Status                             | Scope                                                                              |
+| -------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
+| [0001: Synthetic prototype baseline](0001-synthetic-prototype-baseline.md)             | Existing baseline                  | Current stack, data separation and demo boundaries                                 |
+| [0002: Authenticated synthetic workspaces](0002-authenticated-synthetic-workspaces.md) | Proposed; implementation requested | Better Auth, SQLite, sharing, visit ownership and Compose; teammate review pending |
