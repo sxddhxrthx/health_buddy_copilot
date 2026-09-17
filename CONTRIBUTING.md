@@ -117,6 +117,9 @@ exercise that production build in desktop Edge and mobile Chromium emulation usi
 not physical-device, iOS/Safari, or native release validation. Format only affected files with
 Prettier where possible to avoid unrelated changes; re-run format:check afterward.
 
+Keep Prettier-checked source extensions covered by the LF rules in `.gitattributes`. Windows CI
+checks out with Git line-ending conversion; local formatting alone does not verify checkout behavior.
+
 Playwright starts its test server on a free port 3001, sets APP_ORIGIN to http://127.0.0.1:3001, and
 recreates only the dedicated ignored `.local/e2e` store for each suite run. Never put manual demo
 data there. It never reuses a running server. Arrange the free port
