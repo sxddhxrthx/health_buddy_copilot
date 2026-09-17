@@ -1,5 +1,17 @@
 # Research Twin
 
+## Shared development guidelines
+
+Both developers and coding agents should start with [AGENTS.md](AGENTS.md) and
+[CONTRIBUTING.md](CONTRIBUTING.md). The [product plan](docs/product-plan.md),
+[architecture map](docs/architecture.md), and [decision records](docs/decisions/README.md) define
+shared direction; future ideas below are not automatically approved implementation tasks.
+
+GitHub Copilot has a repository instruction entry point; other tools must be configured to read the
+same guide. Issue/PR templates and [CI](.github/workflows/ci.yml) support consistent delivery.
+Required checks and teammate approvals need the one-time repository settings described in the
+contribution guide; adding files alone does not enforce them.
+
 ## Run the PWA prototype
 
 The repository now contains a working **synthetic-data prototype**, built with React, TypeScript, Vite and an Express API. The original project vision below includes future capabilities that are **not yet integrated**.
