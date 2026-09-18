@@ -71,10 +71,27 @@ ignored under `.local/server-build`; it is not committed or served directly from
 
 ## Authoritative details
 
+Patient report-range visualization uses `shared/report-ranges.ts` for fail-closed source-range
+comparisons and separate named/unit/context series. `src/BodyMap.tsx` and `src/body-map.css` render
+the shared read-only dialog, anatomical navigation groups and elapsed-time history. Patients use
+their own snapshot; doctors use the selected patient's snapshot under the existing sharing grant.
+Patient switches and denied access refreshes unmount the map with that patient's view. The map makes
+no additional API requests and introduces no browser persistence or research data flow. `referenceRange` remains optional
+text; it now survives validation for numeric vitals as well as laboratory records. Units include
+vitamin and vital lab units without automatic conversion. See [ADR 0003](decisions/0003-report-range-body-view.md).
+
 - [Clinician matching, disclosure controls, routes and deployment](../demo/implementation.md)
 - [My Health routes, validation, storage limits and simulated scanning](../demo/my-health.md)
 - [Native delivery prerequisites and release gates](../demo/native-roadmap.md)
 - [Architecture baseline decision](decisions/0001-synthetic-prototype-baseline.md)
+
+The [ADR 0004](decisions/0004-3d-map-and-synthetic-checkups.md) extension adds `server/checkup-data.ts`
+for versioned synthetic fixtures, a patient-only `load-checkups` action on the existing health route,
+and additive sample metadata in the care snapshot. Loaded source reports are read-only; the original
+two extraction samples are retained. No schema migration or new external data flow is required.
+`src/BodyScene.tsx` is a lazy-loaded Three.js scene with local geometry, picking, rotation, cleanup
+and 2D fallback. `src/HealthConnections.tsx` contains preview cards only, not connection logic.
+The 500-record cap, active sharing checks and source-range comparisons remain unchanged.
 
 Extend these sources when their behavior changes rather than copying large specifications into
 multiple files. Architectural changes require the decision workflow before implementation.

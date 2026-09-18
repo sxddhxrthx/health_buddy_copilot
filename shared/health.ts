@@ -9,7 +9,40 @@ export const HEALTH_KINDS = {
   oxygen: { label: 'Oxygen saturation', units: ['%'] },
   lab: {
     label: 'Laboratory result',
-    units: ['g/dL', 'mg/dL', 'mmol/L', '%', '10^9/L', 'U/L', 'Other'],
+    units: [
+      'g/dL',
+      'mg/dL',
+      'mmol/L',
+      '%',
+      '10^9/L',
+      'U/L',
+      'IU/L',
+      'ng/mL',
+      'pg/mL',
+      'nmol/L',
+      'bpm',
+      'mmHg',
+      '10^12/L',
+      'fL',
+      'pg',
+      'mg/L',
+      'ug/dL',
+      'ug/L',
+      'ng/L',
+      'ng/dL',
+      'mIU/L',
+      'uIU/mL',
+      'IU/mL',
+      'ratio',
+      'mL/min/1.73m2',
+      'mOsm/kg',
+      'mg/g',
+      'mm/hr',
+      'seconds',
+      'cells/HPF',
+      'pH',
+      'Other',
+    ],
   },
   diagnosis: { label: 'Recorded diagnosis', units: ['Not applicable'] },
   other: { label: 'Other health record', units: ['Not applicable'] },
@@ -31,7 +64,7 @@ export type HealthDraft = {
 };
 export type HealthRecord = HealthDraft & {
   id: string;
-  source: 'manual' | 'simulated-report' | 'seed';
+  source: 'manual' | 'simulated-report' | 'seed' | 'synthetic-checkup';
   reportId?: string;
 };
 export type DemoReport = {
@@ -111,7 +144,8 @@ export function parseHealthDraft(input: unknown): HealthDraft {
     secondary: kind === 'bp' ? numeric('secondary') : '',
     pulse: kind === 'bp' ? numeric('pulse', true, 1000) : '',
     duration: kind === 'walking' || kind === 'running' ? numeric('duration', true, 1440) : '',
-    referenceRange: kind === 'lab' ? text('referenceRange', 80) : '',
+    referenceRange:
+      !isText && !['walking', 'running', 'steps'].includes(kind) ? text('referenceRange', 80) : '',
     notes: text('notes', 500),
   };
 }

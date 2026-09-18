@@ -22,3 +22,5 @@ The initial baseline records already implemented behavior, not a claim of new fe
 | -------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
 | [0001: Synthetic prototype baseline](0001-synthetic-prototype-baseline.md)             | Existing baseline                  | Current stack, data separation and demo boundaries                                 |
 | [0002: Authenticated synthetic workspaces](0002-authenticated-synthetic-workspaces.md) | Proposed; implementation requested | Better Auth, SQLite, sharing, visit ownership and Compose; teammate review pending |
+| [0003: Patient and doctor report-range body view](0003-report-range-body-view.md)      | Proposed; implementation requested | Source-range visualization within existing sharing grants; teammate review pending |
+| [0004: 3D map and synthetic checkups](0004-3d-map-and-synthetic-checkups.md)           | Proposed; implementation requested | Three.js, broad fictional profiles and inactive provider previews; review pending  |

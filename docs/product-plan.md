@@ -42,6 +42,25 @@ One-command Docker Compose initialization and reproducible source-controlled syn
 included. See [ADR 0002](decisions/0002-authenticated-synthetic-workspaces.md) for the scope, limitations,
 and pending teammate review/shared approval link. This is not a claim of merge or release approval.
 
+## Requested report-range view
+
+The September 18, 2026 requested patient report-range view is recorded in
+[ADR 0003](decisions/0003-report-range-body-view.md). My Health and the doctor's selected shared-patient
+tile open the same read-only body map, restricted to the authorized patient snapshot. It highlights
+latest readings outside their own saved report ranges and exposes chronological
+history with exact values and sources. There are no built-in medical cutoffs, organ-health scores
+or severity estimates. Body regions are navigation groups; vitamins, HbA1c and unmapped measures
+use the general/systemic group. Missing/ambiguous ranges remain unknown. Human review is pending.
+
+## Requested richer demo
+
+The owner approved Three.js and optional sample loading in [ADR 0004](decisions/0004-3d-map-and-synthetic-checkups.md).
+The expanded catalogue has 126 numeric measurements plus six qualitative findings on each of three
+dates (396 entries), with contrasting circulation, liver/kidney and vitamin/mineral profiles.
+It is not a recommended screening package. The 3D view adds count-sized hotspots and rotation with
+the existing 2D fallback. Provider/wearable cards are nonfunctional Coming soon previews only.
+See [the research and source references](lab-catalog-research.md). Human review remains pending.
+
 ## Future direction: separate approval required
 
 - Native Android/iOS packaging, physical-device validation, signing and store delivery follow the

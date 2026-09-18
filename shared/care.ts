@@ -35,6 +35,13 @@ export type CareSnapshot = {
   reports: DemoReport[];
   importedReportIds: string[];
   visits: Visit[];
+  sampleCheckups: {
+    profile: string;
+    measurements: number;
+    records: number;
+    dates: string[];
+    loaded: boolean;
+  };
 };
 export function emptyVisitDraft(): VisitDraft {
   return {

@@ -30,6 +30,11 @@ instruction files as entry points, not competing copies of these rules.
 - Report scanning uses two bundled synthetic reports and predefined extraction fields. No actual OCR,
   camera access, or arbitrary upload. Preserve explicit review, source links, atomic validation,
   duplicate-import rejection, and fictional-only acknowledgement.
+- The owner-approved scope in [ADR 0004](docs/decisions/0004-3d-map-and-synthetic-checkups.md) adds
+  optional synthetic checkup fixtures and Three.js visualization. Sample loading is explicit,
+  additive, atomic, capacity-bounded and duplicate-protected; it never overwrites existing records
+  or runs automatically at startup. Hotspot size encodes flagged-test count, not clinical severity.
+  Provider and wearable cards must only open Coming soon, with no provider login, requests or ETL.
 - Better Auth sessions expire after eight hours and have a 200-session demo capacity. SQLite holds
   persistent synthetic records, with 500 personal entries and 200 visits per patient, at most 100
   visit revisions. Session expiry does not delete records. Use server-authorized HttpOnly cookies;

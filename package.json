@@ -26,7 +26,8 @@
     "express": "^5.1.0",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "three": "0.186.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
@@ -36,6 +37,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "0.185.4",
     "@vitejs/plugin-react": "^4.4.0",
     "concurrently": "^9.1.0",
     "prettier": "^3.9.6",
