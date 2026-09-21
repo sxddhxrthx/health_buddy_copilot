@@ -768,32 +768,39 @@ export function DoctorWorkspace({
   online,
   dirty,
   onDirtyChange,
+  selected,
+  onSelect,
+  onResearch,
 }: {
   account: Account;
   online: boolean;
   dirty: boolean;
   onDirtyChange: (dirty: boolean) => void;
+  selected: string;
+  onSelect: (id: string) => void;
+  onResearch: (view: 'cohort' | 'study') => void;
 }) {
   const [patients, setPatients] = useState<Person[]>([]);
-  const [selected, setSelected] = useState('');
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    let generation = 0;
     const load = () => {
+      const current = ++generation;
       void api<Person[]>('care/patients')
         .then((value) => {
-          if (!cancelled) {
+          if (!cancelled && current === generation) {
             setPatients(value);
             setError('');
-            setSelected((id) => (value.some((person) => person.id === id) ? id : ''));
+            if (selected && !value.some((person) => person.id === selected)) onSelect('');
           }
         })
         .catch((error: Error) => {
-          if (!cancelled) {
+          if (!cancelled && current === generation) {
             setPatients([]);
-            setSelected('');
+            onSelect('');
             setError(error.message);
           }
         });
@@ -806,7 +813,7 @@ export function DoctorWorkspace({
       window.removeEventListener('focus', load);
       window.removeEventListener('online', load);
     };
-  }, [retry]);
+  }, [retry, selected, onSelect]);
   return (
     <div className="my-health">
       <section className="health-section" aria-label="Shared patient selection">
@@ -821,7 +828,7 @@ export function DoctorWorkspace({
             disabled={!online}
             onChange={(event) => {
               if (!dirty || window.confirm('Discard unsaved visit changes and switch patients?'))
-                setSelected(event.target.value);
+                onSelect(event.target.value);
             }}
           >
             <option value="">Choose a shared patient</option>
@@ -847,6 +854,16 @@ export function DoctorWorkspace({
           </div>
         )}
         {!patients.length && !error && <p>No patients are currently sharing with you.</p>}
+        {selected && (
+          <div className="health-actions" aria-label="Selected patient research navigation">
+            <button className="secondary" onClick={() => onResearch('cohort')}>
+              View cohort details
+            </button>
+            <button className="secondary" onClick={() => onResearch('study')}>
+              View research details
+            </button>
+          </div>
+        )}
       </section>
       {selected && (
         <MyHealth

@@ -6,10 +6,11 @@ import { findCohort, parseFilters } from './analytics.js';
 import { answerQuestion, reviewQuestions } from './copilot.js';
 import { DATA_VERSION, MATCH_VERSION } from '../shared/contracts.js';
 import { healthRouter } from './health.js';
+import { reviewRouter, type ReviewOptions } from './review.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { Runtime } from './runtime.js';
 
-export function createApp(runtime: Runtime) {
+export function createApp(runtime: Runtime, reviewOptions: ReviewOptions = {}) {
   const app = express();
   app.disable('x-powered-by');
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
@@ -100,6 +101,7 @@ export function createApp(runtime: Runtime) {
     res.json({ id, name, email, role });
   });
   app.use('/api', healthRouter(runtime));
+  app.use('/api', reviewRouter(runtime, reviewOptions));
   app.use('/api', (_req, res, next) => {
     if (res.locals.user.role !== 'doctor') {
       res.status(403).json({ error: 'Doctor workspace only.' });

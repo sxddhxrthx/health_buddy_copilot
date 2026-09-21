@@ -66,8 +66,31 @@ ignored under `.local/server-build`; it is not committed or served directly from
   other doctors' drafts. Revocation blocks subsequent reads/writes; finalized visits remain stored.
   Views refresh on focus/reconnection and failed access clears doctor data. Already viewed or
   downloaded information cannot be retracted; there is no real-time push revocation channel.
-- No personal-record flow enters matching or study outputs. No API response enters service-worker
+- No personal-entry flow enters matching or study outputs. No API response enters service-worker
   caches. Offline mode serves the application shell; health writes are disabled.
+
+## Selected-patient fictional research
+
+[ADR 0004](decisions/0004-selected-patient-research.md) records the requested narrow exception.
+`src/App.tsx` owns the in-memory selected patient ID; `src/PatientResearch.tsx` renders selected-patient
+cohort/study views and rejects stale requests on navigation/focus refresh. Offline/error states clear
+research results. `GET /api/care/patients/:id/research` checks doctor role and active sharing, reads only
+current finalized visits, and projects confirmed condition sources. `server/patient-research.ts`
+performs exact-label associations to independent versioned fixtures with cohort/cell suppression.
+`shared/patient-research.ts` defines the additive response. No personal readings, revision history,
+drafts, medication fields or summaries enter this matcher. Reference APIs and model activation gates
+are unchanged. No schema migration, dependency or external service is involved.
+`server/presentation-seed.ts` uses one-time provisioning migration 5 to append Jordan's explicitly
+fictional finalized heart-failure visit to the existing visit tables without replacing records or
+sharing grants. It respects the 200-visit limit. Condition fixtures v2 provide public-friendly
+explanations, accessible documentation-count bars and a detailed invented study; these are not
+clinical evidence. Sam's no-match view provides the routine-care presentation comparison.
+
+Buddy cohort and Research study retain the main-branch reference UI (comparison slider, checkboxes,
+matching action, study metrics, site table and evidence tools). Selected-patient details appear in an
+additional, separately labelled section on each page, independently of reference API loading/errors.
+The reference banner links to that section and explains that reference controls, metrics and Copilot
+never operate on the selected patient. Reference filter changes do not alter condition-label matches.
 
 ## Authoritative details
 

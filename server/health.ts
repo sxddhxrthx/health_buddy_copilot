@@ -10,6 +10,8 @@ import {
 } from '../shared/care.js';
 import { reportsForPatient, seedHealthRecords } from './health-data.js';
 import type { Runtime } from './runtime.js';
+import { patientResearch } from './patient-research.js';
+import type { VisitDraft } from '../shared/care.js';
 
 class AccessError extends Error {
   constructor(
@@ -111,6 +113,34 @@ export function healthRouter({ database }: Runtime) {
     const viewer = res.locals.user as Account;
     requireRole(viewer, 'doctor');
     res.json(snapshot(viewer, String(req.params.id)));
+  });
+  router.get('/care/patients/:id/research', (req, res) => {
+    const viewer = res.locals.user as Account;
+    requireRole(viewer, 'doctor');
+    const id = String(req.params.id);
+    if (id.length > 128 || Object.keys(req.query).length)
+      throw new Error('Invalid research request.');
+    const patient = patientFor(viewer, id);
+    const visits = database
+      .prepare(
+        "SELECT id, revision, data FROM visits WHERE patient_id = ? AND status = 'finalized' LIMIT 200",
+      )
+      .all(id) as { id: string; revision: number; data: string }[];
+    // Deliberately do not read personal records, drafts or revision history.
+    const confirmed = visits.flatMap((visit) => {
+      const draft = JSON.parse(visit.data) as VisitDraft;
+      return draft.diagnosisStatus === 'confirmed' && draft.diagnosis.trim()
+        ? [
+            {
+              visitId: visit.id,
+              revision: visit.revision,
+              diagnosis: draft.diagnosis,
+              measuredAt: draft.measuredAt,
+            },
+          ]
+        : [];
+    });
+    res.json(patientResearch(patient, confirmed));
   });
   router.get('/care/sharing', (_req, res) => {
     const viewer = res.locals.user as Account;

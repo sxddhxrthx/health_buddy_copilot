@@ -26,7 +26,10 @@ instruction files as entry points, not competing copies of these rules.
   scope in [ADR 0002](docs/decisions/0002-authenticated-synthetic-workspaces.md); teammate review
   and a shared approval link remain outstanding. Partial sharing and specialty filtering are deferred.
 - Keep shared patient records separate from Alex Morgan's fixed reference scenario and historical
-  research cohorts. Personal records must not feed cohort matching or research outputs.
+  research cohorts. Personal entries must not feed cohort matching or research outputs. The requested
+  [ADR 0004](docs/decisions/0004-selected-patient-research.md) exception uses only current finalized,
+  doctor-confirmed condition labels for local fictional cohort/study associations. No inference from
+  readings, drafts or prescriptions; no model activation. Teammate review remains outstanding.
 - Report scanning uses two bundled synthetic reports and predefined extraction fields. No actual OCR,
   camera access, or arbitrary upload. Preserve explicit review, source links, atomic validation,
   duplicate-import rejection, and fictional-only acknowledgement.

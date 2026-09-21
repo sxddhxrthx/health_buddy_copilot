@@ -4,11 +4,12 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { createRuntime } from '../server/runtime.js';
 import { createApp } from '../server/app.js';
+import type { ReviewOptions } from '../server/review.js';
 
-export async function testApplication() {
+export async function testApplication(reviewOptions: ReviewOptions = {}) {
   const directory = mkdtempSync(join(tmpdir(), 'research-twin-api-'));
   const runtime = await createRuntime({ directory });
-  const server = createApp(runtime).listen(0, '127.0.0.1');
+  const server = createApp(runtime, reviewOptions).listen(0, '127.0.0.1');
   if (!server.listening) await new Promise<void>((resolve) => server.once('listening', resolve));
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
   const accounts = JSON.parse(readFileSync(join(directory, 'demo-accounts.json'), 'utf8')) as {
@@ -21,6 +22,7 @@ export async function testApplication() {
     path: string,
     body?: unknown,
     headers: Record<string, string> = {},
+    signal?: AbortSignal,
   ) {
     if (email && !cookies.has(email)) {
       const account = accounts.find((account) => account.email === email);
@@ -44,6 +46,7 @@ export async function testApplication() {
         ...headers,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
     });
   }
   return {

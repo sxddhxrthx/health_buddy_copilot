@@ -44,11 +44,29 @@ and pending teammate review/shared approval link. This is not a claim of merge o
 
 ## Future direction: separate approval required
 
+### Requested selected-patient integration
+
+The September 18 implementation request is recorded in
+[ADR 0004](decisions/0004-selected-patient-research.md); teammate review and shared approval tracking
+remain outstanding. Current patient selection now persists in memory across Buddy cohort and
+Research study. Supported doctor-confirmed labels in current finalized visits select independent
+fictional cohort aggregates and bundled fictional studies. Unsupported/absent labels return no match.
+Personal entries, measurements, drafts and prescriptions do not drive matching. Reference research
+and the disabled evidence-review model pilot remain separate. No automatic illness detection is added.
+
+The requested presentation extension adds one explicitly fictional advanced-heart-failure visit
+for Jordan, independent 120-case documentation aggregates and a plain-language fictional study.
+Sam remains the simpler routine-care/no-match comparison, not a clinically verified healthy control.
+One-time additive provisioning preserves existing entries, visits, revisions and sharing settings;
+see ADR 0004 for the capacity exception and outstanding review.
+
+### Still deferred
+
 - Native Android/iOS packaging, physical-device validation, signing and store delivery follow the
   [native roadmap](../demo/native-roadmap.md); configuration alone is not a released native app.
 - Production identity lifecycle, governed cloud/AI integrations, FHIR/EHR ingestion and real-data
   support need explicit architecture, security, privacy, and intended-use decisions first.
-- Partial disclosure, specialist-focused prioritization and shared-patient cohort matching are deferred.
+- Partial disclosure, specialist-focused prioritization and clinical-similarity matching are deferred.
 - Real OCR, arbitrary report uploads, camera/device permissions, and synchronization are not part of
   the current My Health scope.
 

@@ -331,7 +331,10 @@ export function Sharing({ disabled }: { disabled: boolean }) {
       <h2>Sharing with your doctors</h2>
       <p>
         Sharing includes all current and future records and finalized visits. Stopping sharing
-        blocks future access; it cannot retract information already viewed.
+        blocks future access; it cannot retract information already viewed. Shared doctors can
+        associate finalized, confirmed condition labels with local fictional cohorts and study
+        descriptions. Personal readings and entries are not used for that matching; no external
+        research service receives these records.
       </p>
       {error && (
         <div role="alert" className="error-banner">

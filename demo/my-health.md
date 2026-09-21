@@ -31,8 +31,49 @@ fictional account; no public registration is enabled.
 6. Patient sharing grants include all existing and future records and finalized visits. Revoking
    sharing denies subsequent doctor reads/writes, but does not erase retained visits or information
    already viewed. Views refresh on focus/reconnection; there is no push revocation channel.
-7. Buddy cohort's reference patient, Copilot and brief use only fixed Alex Morgan data, never the
-   selected shared patient. Partial sharing and specialty-based prioritization are deferred.
+7. Selection persists in memory across Current patient, Buddy cohort and Research study (not reload
+   or sign-out). With a selected patient, the research pages use current finalized visits marked
+   **confirmed** and exact labels **Advanced heart failure**, **Hypertension**, **Type 2 diabetes**, or **Asthma** (case-insensitive).
+   Save and finalize a fictional confirmed visit, then open Buddy cohort for independent fictional
+   case counts (or use **View cohort details** beside the patient selector). **View research details**
+   opens the selected patient's Research study page. Jordan has a bundled fictional confirmed
+   heart-failure visit, with seed provenance in its summary and revision. Sam has no seeded confirmed
+   condition and illustrates the simpler routine-care view; this does not mean he is clinically healthy.
+   The empty state explains recording and finalizing supported fictional conditions. Buddy cohort shows fictional
+   case counts and Research study for its bundled fictional study. These are not real publications,
+   trial eligibility assessments or medical evidence. Source details identify visit and revision.
+8. Absent/unsupported conditions display no match; personal entries, readings, draft/provisional visits,
+   prescriptions and historical revisions are excluded. Amendments apply on the next read. Switching
+   patients clears previous results; focus/reconnection refreshes authorization. With no patient selected,
+   the original Alex Morgan reference demo remains available and explicitly labeled. Its matcher,
+   Copilot and brief never use shared records. The model pilot stays disabled. See
+   [ADR 0004](../docs/decisions/0004-selected-patient-research.md) for scope and pending human review.
+
+## Public-audience presentation (Jordan versus Sam)
+
+1. Rebuild/restart the app (`docker compose up --build --wait` for Compose). The one-time seed also
+   applies to existing stores, without deleting entries, visits or grants. Sign in as Dr Avery Chen.
+2. Select **Jordan Lee**, open **View cohort details**. Start with **Presentation at a glance**:
+   advanced heart failure is an authored fictional label, not something the app detected.
+   Explain that a cohort is simply a group of cases sharing that label.
+3. Show the 120 independent invented cases: **90 (75%)** have a fictional follow-up note and
+   **30 (25%)** do not. The bars describe documentation, not recovery, risk or treatment success.
+4. Open **View research details**. Walk through the everyday-language question, record-review
+   design, illustrative 30-day window and limitations. The study is made up, not recruiting,
+   and the selected patient's records are not included in its counts.
+5. Expand **Recorded condition sources**, then return to Current patient and inspect the seeded
+   finalized visit for the detailed fictional history, functional-class text, ejection-fraction
+   example and January timeline. Those details do not feed matching; personal readings are unchanged.
+6. Select **Sam Taylor**, open either research page to show the simpler **Routine-care comparison**.
+   No supported condition means no associated cohort/study, not proof that a person is healthy.
+   If Sam already has a finalized supported diagnosis in an existing store, its genuine demo match
+   takes precedence; do not delete records just to force a comparison.
+
+If Jordan's sharing was revoked, provisioning does not restore it; the patient must explicitly
+share again. If the workspace already contains 200 Jordan visits, provisioning permanently skips
+the additional visit to preserve the limit. An author may explicitly create/finalize a supported
+fictional visit when capacity permits. Later amendments remain effective across restarts.
+There are no actual clinical findings, prescriptions, prognosis estimates or real study claims.
 
 ## Architecture and boundaries
 

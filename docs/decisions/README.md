@@ -18,6 +18,9 @@ The initial baseline records already implemented behavior, not a claim of new fe
 
 ## Index
 
+- [0004: Selected synthetic patient research navigation](0004-selected-patient-research.md) —
+  Proposed; implementation requested; teammate review/shared approval link pending.
+
 | Record                                                                                 | Status                             | Scope                                                                              |
 | -------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
 | [0001: Synthetic prototype baseline](0001-synthetic-prototype-baseline.md)             | Existing baseline                  | Current stack, data separation and demo boundaries                                 |

@@ -46,6 +46,7 @@ import {
 } from '../shared/contracts';
 import { api } from './api';
 import { DoctorWorkspace, MyHealth } from './MyHealth';
+import { PatientResearch } from './PatientResearch';
 import type { Account } from '../shared/care';
 
 type Tab = 'patient' | 'cohort' | 'study' | 'health' | 'reference';
@@ -193,9 +194,12 @@ export default function App({
   const [study, setStudy] = useState<StudySnapshot | null>(null);
   const [tab, setTab] = useState<Tab>(account.role === 'patient' ? 'health' : 'patient');
   const [dirtyVisit, setDirtyVisit] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState('');
+  const [referenceMode, setReferenceMode] = useState(false);
   function navigate(next: Tab) {
     if (next !== tab && dirtyVisit && !window.confirm('Discard unsaved visit changes?')) return;
     setTab(next);
+    setReferenceMode(next === 'reference');
     setGuide(null);
   }
   const [filters, setFilters] = useState<CohortFilters>({ ...DEFAULT_FILTERS });
@@ -325,6 +329,7 @@ export default function App({
     setAsked('');
   }
   function startGuide(step: number) {
+    setReferenceMode(true);
     setGuide(step);
     setTab(step === 0 ? 'reference' : 'cohort');
     if (step === 3) void ask(PROMPTS[5]);
@@ -529,7 +534,7 @@ export default function App({
                       : 'A living view of one synthetic clinical study.'}
               </p>
             </div>
-            {tab !== 'health' && tab !== 'patient' && (
+            {tab !== 'health' && tab !== 'patient' && (!selectedPatient || referenceMode) && (
               <button className="secondary" onClick={() => startGuide(0)} disabled={busy}>
                 <Play size={15} />
                 Guided demo<span className="muted">5 min</span>
@@ -570,6 +575,9 @@ export default function App({
               online={online}
               dirty={dirtyVisit}
               onDirtyChange={setDirtyVisit}
+              selected={selectedPatient}
+              onSelect={setSelectedPatient}
+              onResearch={(view) => navigate(view)}
             />
           ) : loading ? (
             <div className="startup" role="status">
@@ -585,6 +593,19 @@ export default function App({
                   This fixed fictional scenario is separate from your shared patients. Matching,
                   Copilot answers and review briefs do not use their records.
                 </p>
+                {selectedPatient && !referenceMode && (tab === 'cohort' || tab === 'study') && (
+                  <p>
+                    These comparison controls and study metrics use reference-demo data only. They
+                    do not filter or describe the selected patient. See the separate{' '}
+                    <a href="#selected-patient-research">selected-patient details</a> below.
+                  </p>
+                )}
+                {!selectedPatient && (
+                  <p>
+                    Select a shared patient in Current patient for patient-specific synthetic
+                    cohorts and associated studies.
+                  </p>
+                )}
                 {tab !== 'reference' && (
                   <button className="secondary" onClick={() => navigate('reference')}>
                     <BookOpen size={16} />
@@ -600,7 +621,10 @@ export default function App({
                   </div>
                   <div>
                     <div className="patient-title">
-                      <h2>{patient.name}</h2>
+                      <h2>
+                        {selectedPatient && !referenceMode ? 'Reference patient: ' : ''}
+                        {patient.name}
+                      </h2>
                       <span className="pill">Synthetic patient</span>
                     </div>
                     <p>
@@ -1211,6 +1235,35 @@ export default function App({
                 </button>
               </div>
             )
+          )}
+          {selectedPatient && !referenceMode && (tab === 'cohort' || tab === 'study') && (
+            <section
+              id="selected-patient-research"
+              aria-labelledby="selected-patient-research-title"
+            >
+              <div className="page-heading">
+                <div>
+                  <span className="eyebrow">SEPARATE SYNTHETIC PATIENT ASSOCIATIONS</span>
+                  <h2 id="selected-patient-research-title">
+                    {tab === 'cohort'
+                      ? 'Selected-patient cohort details'
+                      : 'Selected-patient research details'}
+                  </h2>
+                  <p>
+                    Finalized condition-label associations only. Reference comparison filters, study
+                    metrics and Copilot do not apply to this section.
+                  </p>
+                </div>
+              </div>
+              <PatientResearch
+                key={`${selectedPatient}:${tab}`}
+                patientId={selectedPatient}
+                view={tab}
+                online={online}
+                onPatient={() => navigate('patient')}
+                onResearch={(view) => navigate(view)}
+              />
+            </section>
           )}
         </main>
       </div>

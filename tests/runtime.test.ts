@@ -76,7 +76,7 @@ test('local authentication provisions roles and persistence survives reopening w
       runtime.database
         .prepare<[], { total: number }>('SELECT count(*) AS total FROM visit_revisions')
         .get()!.total,
-      1,
+      2,
     );
   } finally {
     runtime?.close();
