@@ -82,15 +82,28 @@ drafts, medication fields or summaries enter this matcher. Reference APIs and mo
 are unchanged. No schema migration, dependency or external service is involved.
 `server/presentation-seed.ts` uses one-time provisioning migration 5 to append Jordan's explicitly
 fictional finalized heart-failure visit to the existing visit tables without replacing records or
-sharing grants. It respects the 200-visit limit. Condition fixtures v2 provide public-friendly
+sharing grants. It respects the 200-visit limit. Condition fixtures v3 provide public-friendly
 explanations, accessible documentation-count bars and a detailed invented study; these are not
 clinical evidence. Sam's no-match view provides the routine-care presentation comparison.
 
-Buddy cohort and Research study retain the main-branch reference UI (comparison slider, checkboxes,
-matching action, study metrics, site table and evidence tools). Selected-patient details appear in an
-additional, separately labelled section on each page, independently of reference API loading/errors.
-The reference banner links to that section and explains that reference controls, metrics and Copilot
-never operate on the selected patient. Reference filter changes do not alter condition-label matches.
+Buddy cohort and Research study show only the selected patient's authorized condition-label
+associations by default, independently of reference API loading/errors. With no selection they ask
+the doctor to choose a current patient; they never fall back to Alex Morgan. Reference API loading
+starts only after explicit entry to the separate reference demo. Its comparison controls, study
+metrics, site table and Copilot remain available there and never describe the selected patient.
+Reference context persists between reference cohort/study pages. Returning to Current patient
+leaves reference mode without changing the selected patient.
+
+The requested [200-patient extension](decisions/0005-expanded-synthetic-cohort-demo.md) restores the
+original cohort visual components for selected-patient data: banner, comparison card, hero/ring,
+shared metrics/distributions, evidence matrix and Copilot column. Reference-only filters and Copilot
+are explicitly unavailable for selected patients, not silently connected to Alex's data.
+`server/expanded-patients.ts` adds 197 reproducible patient profiles with 16 varied readings and two
+finalized fictional visits each, initially shared with both demo doctors. Existing profiles and
+sharing remain untouched. New-profile transactions and migration marker 6 make restart additive.
+`condition-fixtures-v3` contains 200 independent cases across four labels with follow-up, documentation
+window and record-setting aggregates; no patient workspace rows are included. Alex's isolated
+480-case reference fixture and exact-label association version are unchanged.
 
 ## Authoritative details
 

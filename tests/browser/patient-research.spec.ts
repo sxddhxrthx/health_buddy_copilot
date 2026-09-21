@@ -16,12 +16,14 @@ test('Jordan has a detailed fictional heart scenario and Sam has a simpler compa
   await expect(
     page.getByRole('heading', { name: 'Advanced heart failure', exact: true }),
   ).toBeVisible();
-  await expect(page.getByText('120 independently generated fictional cases')).toBeVisible();
-  await expect(page.getByText('Fictional follow-up note present: 90 of 120 (75%)')).toBeVisible();
-  await expect(page.getByText('Fictional follow-up note missing: 30 of 120 (25%)')).toBeVisible();
-  await expect(
-    page.getByRole('meter', { name: 'Fictional follow-up note present', exact: true }),
-  ).toHaveAttribute('value', '90');
+  await expect(page.getByText('80 independently generated fictional cases')).toBeVisible();
+  const followup = page
+    .locator('.distribution')
+    .filter({ has: page.getByRole('heading', { name: 'Fictional follow-up documentation' }) });
+  await expect(followup).toContainText('Fictional follow-up note present');
+  await expect(followup).toContainText('60 (75%)');
+  await expect(followup).toContainText('Fictional follow-up note missing');
+  await expect(followup).toContainText('20 (25%)');
   await expect(page.getByRole('region', { name: 'Presentation at a glance' })).toContainText(
     'not a severity assessment',
   );

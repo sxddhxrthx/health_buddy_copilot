@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { PatientResearch as Research } from '../shared/patient-research';
 import { api } from './api';
+import { PatientCohort } from './PatientCohort';
 
 export function PatientResearch({
   patientId,
@@ -41,6 +42,17 @@ export function PatientResearch({
       window.removeEventListener('focus', load);
     };
   }, [patientId, view, online, retry]);
+
+  if (view === 'cohort' && online && !error && result) {
+    return (
+      <PatientCohort
+        result={result}
+        onPatient={onPatient}
+        onStudy={() => onResearch('study')}
+        onRefresh={() => setRetry((value) => value + 1)}
+      />
+    );
+  }
 
   return (
     <div className="my-health">

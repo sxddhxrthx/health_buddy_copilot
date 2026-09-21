@@ -3,12 +3,13 @@ import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { getMigrations } from 'better-auth/db/migration';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { seedHealthRecords } from './health-data.js';
 import { emptyVisitDraft } from '../shared/care.js';
 import { seedPresentationVisit } from './presentation-seed.js';
+import { EXPANDED_PATIENTS, seedExpandedPatient } from './expanded-patients.js';
 
 export const DEMO_ACCOUNTS = [
   { email: 'sam@patient.example', name: 'Sam Taylor', role: 'patient', persona: 'SYN-USER-001' },
@@ -26,6 +27,7 @@ export const DEMO_ACCOUNTS = [
     role: 'doctor',
     persona: 'SYN-DOCTOR-002',
   },
+  ...EXPANDED_PATIENTS,
 ] as const;
 
 export async function createRuntime(options: { directory?: string; baseURL?: string } = {}) {
@@ -144,6 +146,21 @@ export async function createRuntime(options: { directory?: string; baseURL?: str
         mode: 0o600,
         flag: 'wx',
       });
+    // Extend old stores without rotating existing passwords. Persist before creating accounts,
+    // so interrupted provisioning can resume with the same credentials.
+    const missing = EXPANDED_PATIENTS.filter(
+      ({ email }) => !credentials.some((entry) => entry.email === email),
+    );
+    if (missing.length) {
+      for (const { email } of missing) {
+        if (database.prepare('SELECT 1 FROM user WHERE email = ?').get(email))
+          throw new Error('Demo provisioning data is incomplete. Restore its backup.');
+        credentials.push({ email, password: randomBytes(24).toString('base64url') });
+      }
+      const temporary = `${credentialsFile}.next`;
+      writeFileSync(temporary, JSON.stringify(credentials, null, 2), { mode: 0o600 });
+      renameSync(temporary, credentialsFile);
+    }
     const ids = new Map<string, string>();
     for (const account of DEMO_ACCOUNTS) {
       let user = database.prepare('SELECT id FROM user WHERE email = ?').get(account.email) as
@@ -167,12 +184,16 @@ export async function createRuntime(options: { directory?: string; baseURL?: str
             .prepare('INSERT INTO profiles(user_id, persona) VALUES (?, ?)')
             .run(userId, account.persona);
           if (account.role === 'patient') {
-            for (const record of seedHealthRecords()) {
+            const expandedIndex = EXPANDED_PATIENTS.findIndex(
+              (entry) => entry.email === account.email,
+            );
+            for (const record of seedHealthRecords(expandedIndex < 0 ? 0 : expandedIndex + 1)) {
               const entry = { ...record, id: randomUUID() };
               database
                 .prepare('INSERT INTO health_records VALUES (?, ?, ?)')
                 .run(entry.id, userId, JSON.stringify(entry));
             }
+            if (expandedIndex >= 0) seedExpandedPatient(database, userId, expandedIndex);
           }
         })();
       }
@@ -226,6 +247,7 @@ export async function createRuntime(options: { directory?: string; baseURL?: str
       ids.get('jordan@patient.example')!,
       ids.get('avery@doctor.example')!,
     );
+    database.prepare('INSERT OR IGNORE INTO app_migrations VALUES (6)').run();
     return { auth, database, baseURL, directory, close: () => database.close() };
   } catch (error) {
     database.close();

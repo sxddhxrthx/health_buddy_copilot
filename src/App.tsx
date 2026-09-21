@@ -39,7 +39,6 @@ import {
   type CohortFilters,
   type CohortResult,
   type CopilotResponse,
-  type Distribution,
   type Evidence,
   type PatientState,
   type StudySnapshot,
@@ -47,6 +46,7 @@ import {
 import { api } from './api';
 import { DoctorWorkspace, MyHealth } from './MyHealth';
 import { PatientResearch } from './PatientResearch';
+import { Metric, DistributionCard } from './ResearchCards';
 import type { Account } from '../shared/care';
 
 type Tab = 'patient' | 'cohort' | 'study' | 'health' | 'reference';
@@ -199,7 +199,9 @@ export default function App({
   function navigate(next: Tab) {
     if (next !== tab && dirtyVisit && !window.confirm('Discard unsaved visit changes?')) return;
     setTab(next);
-    setReferenceMode(next === 'reference');
+    setReferenceMode(
+      next === 'reference' || (referenceMode && (next === 'cohort' || next === 'study')),
+    );
     setGuide(null);
   }
   const [filters, setFilters] = useState<CohortFilters>({ ...DEFAULT_FILTERS });
@@ -219,7 +221,7 @@ export default function App({
   const [about, setAbout] = useState(false);
   const answerRef = useRef<HTMLDivElement>(null);
   const load = useCallback(async () => {
-    if (account.role === 'patient') {
+    if (account.role === 'patient' || !referenceMode) {
       setLoading(false);
       return;
     }
@@ -236,7 +238,7 @@ export default function App({
     } finally {
       setLoading(false);
     }
-  }, [account.role]);
+  }, [account.role, referenceMode]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -408,7 +410,9 @@ export default function App({
               >
                 <Users size={19} />
                 Buddy cohort
-                {cohort && !cohort.suppressed && <span className="nav-count">{cohort.size}</span>}
+                {referenceMode && cohort && !cohort.suppressed && (
+                  <span className="nav-count">{cohort.size}</span>
+                )}
               </button>
               <button
                 className={tab === 'study' ? 'nav-item active' : 'nav-item'}
@@ -497,7 +501,7 @@ export default function App({
               </span>
             </div>
           )}
-          {error && (
+          {referenceMode && error && (
             <div className="error-banner" role="alert">
               <span>{error}</span>
               <button
@@ -530,11 +534,15 @@ export default function App({
                   : tab === 'patient'
                     ? `${account.name} / Doctor workspace`
                     : tab === 'cohort'
-                      ? 'Discover comparable historical patterns—not a diagnosis.'
-                      : 'A living view of one synthetic clinical study.'}
+                      ? referenceMode
+                        ? 'Reference demo: comparable historical patterns—not a diagnosis.'
+                        : 'Fictional cohort associations for the selected patient.'
+                      : referenceMode
+                        ? 'Reference demo: one synthetic clinical study.'
+                        : 'Fictional study associations for the selected patient.'}
               </p>
             </div>
-            {tab !== 'health' && tab !== 'patient' && (!selectedPatient || referenceMode) && (
+            {referenceMode && (
               <button className="secondary" onClick={() => startGuide(0)} disabled={busy}>
                 <Play size={15} />
                 Guided demo<span className="muted">5 min</span>
@@ -579,6 +587,36 @@ export default function App({
               onSelect={setSelectedPatient}
               onResearch={(view) => navigate(view)}
             />
+          ) : !referenceMode && (tab === 'cohort' || tab === 'study') ? (
+            <>
+              {selectedPatient ? (
+                <PatientResearch
+                  key={`${selectedPatient}:${tab}`}
+                  patientId={selectedPatient}
+                  view={tab}
+                  online={online}
+                  onPatient={() => navigate('patient')}
+                  onResearch={(view) => navigate(view)}
+                />
+              ) : (
+                <section className="health-section" aria-label="Selected patient research">
+                  <h2>Choose a current patient</h2>
+                  <p>
+                    Select a shared patient to view their fictional cohorts and associated studies.
+                  </p>
+                  <button className="secondary" onClick={() => navigate('patient')}>
+                    Return to Current patient
+                  </button>
+                </section>
+              )}
+              <section className="notice reference-notice" aria-label="Reference demo navigation">
+                <p>The fixed reference demo is separate from selected-patient research.</p>
+                <button className="secondary" onClick={() => navigate('reference')}>
+                  <BookOpen size={16} />
+                  View reference patient
+                </button>
+              </section>
+            </>
           ) : loading ? (
             <div className="startup" role="status">
               <LoaderCircle className="spin" />
@@ -593,13 +631,6 @@ export default function App({
                   This fixed fictional scenario is separate from your shared patients. Matching,
                   Copilot answers and review briefs do not use their records.
                 </p>
-                {selectedPatient && !referenceMode && (tab === 'cohort' || tab === 'study') && (
-                  <p>
-                    These comparison controls and study metrics use reference-demo data only. They
-                    do not filter or describe the selected patient. See the separate{' '}
-                    <a href="#selected-patient-research">selected-patient details</a> below.
-                  </p>
-                )}
                 {!selectedPatient && (
                   <p>
                     Select a shared patient in Current patient for patient-specific synthetic
@@ -621,10 +652,7 @@ export default function App({
                   </div>
                   <div>
                     <div className="patient-title">
-                      <h2>
-                        {selectedPatient && !referenceMode ? 'Reference patient: ' : ''}
-                        {patient.name}
-                      </h2>
+                      <h2>{patient.name}</h2>
                       <span className="pill">Synthetic patient</span>
                     </div>
                     <p>
@@ -1236,35 +1264,6 @@ export default function App({
               </div>
             )
           )}
-          {selectedPatient && !referenceMode && (tab === 'cohort' || tab === 'study') && (
-            <section
-              id="selected-patient-research"
-              aria-labelledby="selected-patient-research-title"
-            >
-              <div className="page-heading">
-                <div>
-                  <span className="eyebrow">SEPARATE SYNTHETIC PATIENT ASSOCIATIONS</span>
-                  <h2 id="selected-patient-research-title">
-                    {tab === 'cohort'
-                      ? 'Selected-patient cohort details'
-                      : 'Selected-patient research details'}
-                  </h2>
-                  <p>
-                    Finalized condition-label associations only. Reference comparison filters, study
-                    metrics and Copilot do not apply to this section.
-                  </p>
-                </div>
-              </div>
-              <PatientResearch
-                key={`${selectedPatient}:${tab}`}
-                patientId={selectedPatient}
-                view={tab}
-                online={online}
-                onPatient={() => navigate('patient')}
-                onResearch={(view) => navigate(view)}
-              />
-            </section>
-          )}
         </main>
       </div>
       {evidence && (
@@ -1356,56 +1355,5 @@ export default function App({
         </Modal>
       )}
     </div>
-  );
-}
-
-function Metric({ value, label, detail }: { value: string; label: string; detail: string }) {
-  return (
-    <article className="metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{detail}</small>
-    </article>
-  );
-}
-function DistributionCard({
-  distribution: d,
-  citation,
-}: {
-  distribution: Distribution;
-  citation: ReactNode;
-}) {
-  return (
-    <section className="card distribution">
-      <div className="section-head">
-        <h3>{d.label}</h3>
-        {citation}
-      </div>
-      <span className="label">OBSERVED SYNTHETIC PATTERN</span>
-      {d.suppressed ? (
-        <p className="notice">
-          Entire distribution withheld: at least one observed cell is too small to disclose.
-        </p>
-      ) : (
-        <div className="distribution-bars">
-          {d.rows.map((r) => (
-            <div key={r.label}>
-              <div className="bar-label">
-                <span>{r.label}</span>
-                <strong>
-                  {r.count} <small>({r.percent}%)</small>
-                </strong>
-              </div>
-              <div className="bar-track">
-                <span style={{ width: `${r.percent}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <p className="card-footnote">
-        Descriptive records only. No causal or patient-specific inference.
-      </p>
-    </section>
   );
 }

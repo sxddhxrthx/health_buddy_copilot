@@ -1,4 +1,5 @@
 import type { Person } from './care.js';
+import type { Distribution } from './contracts.js';
 
 export type ConfirmedConditionSource = {
   visitId: string;
@@ -10,6 +11,7 @@ export type PatientResearch = {
   patient: Person;
   dataVersion: string;
   matchingVersion: string;
+  fixtureTotal?: number;
   unmatched: ConfirmedConditionSource[];
   matches: {
     condition: string;
@@ -18,6 +20,7 @@ export type PatientResearch = {
       suppressed: boolean;
       total: number | null;
       followup: { label: string; count: number }[];
+      distributions?: Distribution[];
     };
     study: { id: string; title: string; description: string };
     presentation?: {
