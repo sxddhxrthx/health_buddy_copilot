@@ -10,6 +10,13 @@ import {
 } from '../shared/care.js';
 import { reportsForPatient, seedHealthRecords } from './health-data.js';
 import type { Runtime } from './runtime.js';
+import {
+  CHECKUP_DATES,
+  CHECKUP_REPORT_IDS,
+  CHECKUP_TESTS,
+  checkupProfile,
+  sampleCheckups,
+} from './checkup-data.js';
 import { patientResearch } from './patient-research.js';
 import type { VisitDraft } from '../shared/care.js';
 
@@ -42,6 +49,14 @@ export function healthRouter({ database }: Runtime) {
   }
   function snapshot(viewer: Account, id: string): CareSnapshot {
     const patient = patientFor(viewer, id);
+    const importedReportIds = (
+      database.prepare('SELECT report_id FROM imported_reports WHERE patient_id = ?').all(id) as {
+        report_id: string;
+      }[]
+    ).map((row) => row.report_id);
+    const loadedCheckups = CHECKUP_REPORT_IDS.some((reportId) =>
+      importedReportIds.includes(reportId),
+    );
     const records = database
       .prepare('SELECT data FROM health_records WHERE patient_id = ?')
       .all(id) as { data: string }[];
@@ -62,12 +77,18 @@ export function healthRouter({ database }: Runtime) {
     return {
       patient,
       records: records.map(({ data }) => JSON.parse(data)),
-      reports: reportsForPatient(patient),
-      importedReportIds: (
-        database.prepare('SELECT report_id FROM imported_reports WHERE patient_id = ?').all(id) as {
-          report_id: string;
-        }[]
-      ).map(({ report_id }) => report_id),
+      reports: [
+        ...reportsForPatient(patient),
+        ...(loadedCheckups ? sampleCheckups(patient).reports : []),
+      ],
+      importedReportIds,
+      sampleCheckups: {
+        profile: checkupProfile(patient.persona),
+        measurements: CHECKUP_TESTS.length,
+        records: (CHECKUP_TESTS.length + 6) * CHECKUP_DATES.length,
+        dates: [...CHECKUP_DATES],
+        loaded: loadedCheckups,
+      },
       visits: visits.map((visit) => ({
         id: visit.id,
         doctorId: visit.doctor_id,
@@ -273,6 +294,29 @@ export function healthRouter({ database }: Runtime) {
             .prepare('INSERT INTO health_records VALUES (?, ?, ?)')
             .run(record.id, viewer.id, JSON.stringify(record));
         database.prepare('INSERT INTO imported_reports VALUES (?, ?)').run(viewer.id, report.id);
+      } else if (body.action === 'load-checkups') {
+        if (body.confirmed !== true) throw new Error('Confirm loading fictional sample checkups.');
+        if (
+          CHECKUP_REPORT_IDS.some((reportId) =>
+            database
+              .prepare('SELECT 1 FROM imported_reports WHERE patient_id = ? AND report_id = ?')
+              .get(viewer.id, reportId),
+          )
+        )
+          throw new Error(
+            'Sample checkups already loaded. Reset personal demo records to load again.',
+          );
+        const samples = sampleCheckups(patientFor(viewer, viewer.id));
+        if (total + samples.records.length > 500)
+          throw new Error('Not enough space for all sample checkups. No records were added.');
+        for (const source of samples.records) {
+          const record = { ...source, id: randomUUID() };
+          database
+            .prepare('INSERT INTO health_records VALUES (?, ?, ?)')
+            .run(record.id, viewer.id, JSON.stringify(record));
+        }
+        for (const report of samples.reports)
+          database.prepare('INSERT INTO imported_reports VALUES (?, ?)').run(viewer.id, report.id);
       } else if (body.action === 'reset') {
         database.prepare('DELETE FROM health_records WHERE patient_id = ?').run(viewer.id);
         database.prepare('DELETE FROM imported_reports WHERE patient_id = ?').run(viewer.id);

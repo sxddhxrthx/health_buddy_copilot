@@ -15,6 +15,79 @@ fictional account; no public registration is enabled.
 7. Find the result in the timeline and select **View source**. Records preserve simulated-report provenance and user confirmation, which is not clinical verification. Repeat with the fictional diagnosis note. Duplicate report imports are rejected, including after individual results are deleted; resetting allows a fresh walkthrough.
 8. **Reset demo records** restores the original 16 readings, removing personal added entries and imports only. It preserves doctor visits and sharing relationships.
 
+## Patient and doctor body map
+
+The default map now uses an illustrative Three.js body with selectable organs and count-sized
+hotspots. Rotate/reset/play controls operate the model; 2D map remains available, and a browser
+without WebGL uses the 2D view. Hotspot size represents flagged latest test series, not diagnosis or
+severity. The general/systemic hotspot is deliberately separate from any single organ.
+
+### Rich sample profiles
+
+In patient mode, **Reports and connected apps > Load sample checkups** adds 396 fictional entries:
+126 numeric measurements and six qualitative findings across three dates. It preserves existing
+records, doctor visits and sharing, rejects repeat loading and stays within the 500-record limit.
+It does not load automatically or replace the original 16 seed readings. Reset personal records
+removes samples and permits another walkthrough. Source reports remain available for inspection.
+
+- Sam Taylor: circulation/lipid-focused high and low readings.
+- Jordan Lee: liver/kidney-focused readings plus a qualitative fictional urine-culture finding.
+- Casey Patel: multiple vitamin/mineral readings below their fictional source ranges.
+
+Doctors see loaded samples through existing sharing grants. Casey shares with Dr Riley Shah;
+Sam and Jordan share with Dr Avery Chen. No grants or accounts are changed by sample loading.
+See [laboratory catalogue research](../docs/lab-catalog-research.md) for coverage, source links,
+specialist-test caveats and provider constraints. Qualitative urine findings are shown as source
+text and are excluded from numeric hotspot counts.
+
+### Connection previews
+
+Patient mode displays lab/hospital and fitness/wearable options. Every provider opens **Coming soon**.
+No provider credentials, permissions, OAuth, background requests, imports or ETL are implemented.
+Do not treat the displayed names as active integrations or partnerships.
+
+### Range comparisons
+
+Select **Body map** on the right side of the patient summary tile in My Health, or in the doctor's
+Current patient page after selecting a sharing patient, to open the same read-only body view.
+Red means a latest
+recorded value is numerically outside that reading's saved report range, not organ disease or
+severity. Gray is not a claim of health. Heart/circulation, liver-related and kidney-related labels
+are explicitly allowlisted navigation groups, not exclusive clinical interpretations. Vitamins,
+HbA1c and unmapped test names remain general/systemic. Unknown names are not guessed from substrings.
+
+Hover or focus a body region to inspect its outside-range readings, or select it by keyboard or tap.
+Select a measurement to see its history. Horizontal positions use elapsed demo-local time rather
+than equal spacing. Original units, named tests and contexts remain separate. The exact-value table
+includes each reading's own supplied range and source; select a date for source details. Prior
+results are compared with their own ranges, never today's range. Tied latest timestamps are all
+retained. Escape or the close button returns focus to the patient tile's launch button.
+
+No limits are hard-coded: a creatinine value is not flagged just because it exceeds 1.2. Supported
+range text includes `0.6-1.2`, `0.6 to 1.2`, en/em-dash intervals, `< 1.2`, `<= 1.2`, `> 30`, and
+`>= 30`, including Unicode comparison signs. A trailing unit must match the reading's unit exactly.
+Intervals include both endpoints; inequality signs preserve strict/inclusive bounds. Missing,
+reversed, qualitative, age/sex-conditional, mismatched-unit or otherwise ambiguous ranges remain
+unclassified. `Other` units cannot be compared. No bold-report flag is currently stored, so this
+feature compares only the reviewed saved numeric range; it does not claim to reproduce source typography.
+
+Existing BP entries support `90-120 / 60-80` for separate systolic/diastolic ranges. Pulse saved
+inside BP has no separate range and remains unclassified; a named Heart rate/Pulse laboratory
+reading with `bpm` can carry its own source range. Vitamin units include ng/mL, pg/mL and nmol/L.
+No report uploads or OCR are added. Optional checkup fixtures extend the source library without
+changing the two extraction samples. Existing data is not automatically reseeded or modified.
+The original 16 seeded readings have no report ranges, so an initially neutral map is expected.
+Load sample checkups, import the bundled blood report and review its HbA1c range, or enter fictional report readings and
+their source ranges to exercise highlights. Doctors see only their selected patient's shared
+readings and cannot edit them through the map. Switching patients resets the map. Revoked access
+clears the snapshot and closes the map at the next focus/reconnection refresh, as for the existing
+doctor record view; there is no real-time revocation channel.
+
+The bundled PNG body silhouette is a public-domain derivative of Mikael Haggstrom's image by
+RexxS, with background work by Frederic Michel. Source and license:
+https://commons.wikimedia.org/wiki/File:Human_body_silhouette.svg . It is stored locally as
+`public/body-silhouette.png`; no external image request is made when viewing patient data.
+
 ## Doctor and visit walkthrough
 
 1. Sign in as Dr Avery Chen. Current patient lists only actively sharing patients and supports search.
@@ -82,9 +155,10 @@ There are no actual clinical findings, prescriptions, prognosis estimates or rea
 - Bundled samples and deterministic seeds: `server/health-data.ts`.
 - Express router: `server/health.ts`, mounted behind authentication at `/api`.
 - `GET /api/health-demo/reports` returns synthetic report text and predefined extraction drafts.
-- `POST /api/health-demo` accepts `read`, `save`, `delete`, `import`, `reset`. Ownership comes from the
+- `POST /api/health-demo` accepts `read`, `save`, `delete`, `import`, `load-checkups`, `reset`. Ownership comes from the
   authenticated cookie, not a request-body patient/session ID. Mutations require `syntheticOnly: true`;
-  import also requires `confirmed: true` and every reviewed field. The 8 KB limit remains. There is
+  import also requires `confirmed: true` and every reviewed field. Sample loading requires
+  `confirmed: true` and uses server-owned versioned fixtures, not client-supplied measurements. The 8 KB limit remains. There is
   no anonymous create, arbitrary upload or public account-management endpoint.
 - `GET /api/care/patients` lists a doctor's actively sharing patients; `GET /api/care/patients/:id`
   returns an authorized snapshot. `POST /api/care/patients/:id/visits` accepts create/save/finalize/amend

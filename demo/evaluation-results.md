@@ -1,5 +1,74 @@
 # Initial evaluation results
 
+## Expanded 3D demo - September 18, 2026
+
+The owner-approved ADR 0004 extension adds a lazy-loaded illustrative Three.js body, count-sized
+hotspots, optional three-date sample profiles and 14 inactive provider/wearable previews. The
+catalogue contains 126 numeric measurements and six qualitative findings per date (396 entries).
+Sam, Jordan and Casey produce distinct circulation, liver/kidney and vitamin/mineral patterns.
+
+- `npm run format:check`: passed across the repository.
+- `npm run check`: strict client/server builds and all 36 unit/API tests passed on Node 22.23.2;
+  the final explicit-runtime run returned exit code 0.
+- `npm run test:e2e`: 28 desktop Edge/mobile-emulation tests passed in 42.7 seconds.
+- `git diff --check`: passed. Edited source diagnostics were clear.
+- Inspected desktop/mobile anatomy and provider screenshots. Canvas-pixel checks, selection,
+  rotation/reset, WebGL-loss fallback, unchanged summary counts and history passed. Saved-source
+  navigation preserves unsaved extraction reviews. All provider buttons open Coming soon with
+  no credential fields or external requests.
+- Loader tests confirm atomic capacity rejection, duplicate rejection even after entry deletion,
+  patient-only writes, additive preservation of existing entries and authorized doctor reads.
+  Existing sharing, visit ownership, revocation, original import and offline journeys still pass.
+
+The initial continuous-render loop made a desktop journey hit the existing 30-second timeout.
+On-demand rendering now stops when idle and continues only for rotation/damping; the final profile
+journeys took 3.3 and 4.4 seconds. No timeout was increased or test skipped. A new fallback assertion
+was corrected to compare rendered text consistently, not DOM text with different whitespace.
+
+Vite reports a size warning for the separately loaded Three.js chunk: 587.66 kB minified,
+149.92 kB gzip. The warning is retained, not suppressed. The 3D geometry is illustrative, not a
+patient scan or clinically validated atlas; hotspot size is count, not severity. Qualitative
+culture findings do not enter numeric hotspot counts. No real provider integrations, clinical
+validation, physical-device/Safari testing, remote CI, deployment or new Docker image scan/build
+was performed. Human review and shared approval links for the proposed ADRs remain outstanding.
+
+## Doctor body map - September 18, 2026
+
+Body map is now available in both the patient and doctor's selected shared-patient summary tile.
+The same read-only component uses each view's existing authorized snapshot; no API permissions or
+record-editing rights changed. The earlier patient-only validation below describes the original scope.
+
+- `npm run format:check`, `npm run check` and `git diff --check`: passed; 34 unit/API tests passed.
+- `npm run test:e2e`: 22 desktop/mobile browser tests passed, including shared-patient selection,
+  correct map identity/history, absence of editing controls, patient-switch isolation and map closure
+  on the existing access refresh after sharing revocation. Test sharing grants were restored afterward.
+- Doctor body-map desktop/mobile screenshots inspected. Local preview on port 8081 returned HTTP 200.
+- Docker was not rebuilt or restarted, and remote CI was not run. Existing synthetic-only and
+  report-range limitations and the pending ADR 0003 review still apply.
+
+## Patient body report map - September 18, 2026
+
+Observed locally on Windows with Node 22.23.2 for the requested report-range visualization:
+
+- `npm run format:check`: passed.
+- `npm run check`: strict TypeScript, production PWA and compiled-server builds completed.
+  The full unit/API suite was separately confirmed with `npm test`: 34 passed, none failed.
+- `npm run test:e2e`: 20 passed across desktop Edge and mobile Chromium emulation.
+- `git diff --check`: passed. Source diagnostics were clean.
+- Inspected desktop/mobile body-map screenshots; added marker-size, bitmap-load, checkbox-size and
+  dialog-overflow assertions. Hover/focus/tap selection, Escape/focus return, exact history values,
+  report source inspection and patient-only visibility were exercised.
+
+Range tests cover open/closed bounds, supplied-unit matching, ambiguous/missing ranges, changing
+historical reference intervals, tied latest readings and separate test/unit/context series. Browser
+tests use synthetic readings for creatinine, SGPT, SGOT, cholesterol, HbA1c and vitamin D, including
+unequal time gaps to verify proportional chart positioning. The public-domain bitmap is local and
+included in the PWA precache. No records, secrets or sessions are stored in browser caches.
+
+No production clinical validation, real report parsing, Docker rebuild, physical-device testing or
+remote CI was performed for this feature. Existing demo data and the two bundled report workflows
+were preserved. Teammate review and the shared approval link for ADR 0003 remain outstanding.
+
 ## Formatting and runtime-image hardening - September 18, 2026
 
 The two original formatting failures in index.html and scripts/generate-icons.mjs were fixed with

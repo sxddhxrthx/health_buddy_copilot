@@ -123,6 +123,34 @@
 }
 .my-health .patient-banner {
   margin: 0;
+  flex-wrap: wrap;
+}
+.my-health .patient-identity {
+  min-width: 0;
+}
+.my-health .patient-identity > div:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.patient-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.patient-banner-actions .patient-body-map {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-color: #b4d4ca;
+  background: #edf6f2;
+  color: #176859;
+  font-size: 12px;
+  box-shadow: none;
+}
+.patient-banner-actions .patient-body-map:hover:not(:disabled) {
+  background: #dceee6;
+  border-color: #80b6a5;
 }
 .my-health h2 {
   display: flex;
@@ -300,6 +328,10 @@
   }
 }
 @media (max-width: 500px) {
+  .patient-banner-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
   .health-section {
     padding: 16px;
   }

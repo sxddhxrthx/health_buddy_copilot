@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Activity, FileText, HeartPulse, Plus, RefreshCw } from 'lucide-react';
+import { Activity, FileText, HeartPulse, PersonStanding, Plus, RefreshCw } from 'lucide-react';
 import { api, ApiError } from './api';
 import type { Account, CareSnapshot, Person } from '../shared/care';
 import { Sharing, Visits } from './Visits';
+import { BodyMap } from './BodyMap';
+import { HealthConnections } from './HealthConnections';
 import {
   HEALTH_KINDS,
   GLUCOSE_CONTEXTS,
@@ -20,11 +22,13 @@ import './health.css';
 const dateTime = (value: string) => value.replace('T', ' · ');
 const recordName = (record: HealthDraft) => record.label || HEALTH_KINDS[record.kind].label;
 const sourceLabel = (record: HealthRecord) =>
-  record.source === 'manual'
-    ? 'Manually entered · synthetic'
-    : record.source === 'seed'
-      ? 'Seeded synthetic entry'
-      : 'Simulated report · user-confirmed, not clinically verified';
+  record.source === 'synthetic-checkup'
+    ? 'Synthetic checkup fixture / not clinically verified'
+    : record.source === 'manual'
+      ? 'Manually entered · synthetic'
+      : record.source === 'seed'
+        ? 'Seeded synthetic entry'
+        : 'Simulated report · user-confirmed, not clinically verified';
 
 function EntryFields({
   draft,
@@ -131,7 +135,8 @@ function EntryFields({
       )}
       {(draft.kind === 'walking' || draft.kind === 'running') &&
         input('duration', 'Duration (minutes, optional)', { type: 'number' })}
-      {draft.kind === 'lab' &&
+      {!textual &&
+        !['walking', 'running', 'steps'].includes(draft.kind) &&
         input('referenceRange', 'Printed reference range (optional)', { maxLength: 80 })}
       <label className="health-full" htmlFor={`${id}-notes`}>
         Notes (fictional only)
@@ -257,12 +262,14 @@ export function MyHealth({
   const [editing, setEditing] = useState<string>();
   const [fictional, setFictional] = useState(false);
   const [reportId, setReportId] = useState('SYN-REPORT-001');
+  const [sourceReportId, setSourceReportId] = useState('');
   const [extracted, setExtracted] = useState<HealthDraft[] | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [bodyMapOpen, setBodyMapOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const reportRef = useRef<HTMLElement>(null);
+  const sourceRef = useRef<HTMLElement>(null);
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -338,7 +345,9 @@ export function MyHealth({
     setEditing(undefined);
     setFictional(false);
   }
-  const selectedReport = reports.find((report) => report.id === reportId);
+  const selectedReport = reports.find(
+    (report) => report.id === reportId && report.fields.length > 0,
+  );
   const imported = session?.importedReportIds.includes(reportId);
   const records = [...(session?.records ?? [])].sort((a, b) =>
     b.measuredAt.localeCompare(a.measuredAt),
@@ -359,7 +368,7 @@ export function MyHealth({
 
   return (
     <div className="my-health">
-      <section className="patient-banner">
+      <section className="patient-banner" aria-label="Patient summary">
         <div className="patient-identity">
           <div className="avatar">
             <HeartPulse size={22} />
@@ -369,7 +378,19 @@ export function MyHealth({
             <p>{session?.patient.persona} · Synthetic persona · January 2026</p>
           </div>
         </div>
-        <span className="pill">Synthetic only</span>
+        <div className="patient-banner-actions">
+          <span className="pill">Synthetic only</span>
+          <button
+            type="button"
+            className="secondary patient-body-map"
+            disabled={busy || loading || !session}
+            aria-haspopup="dialog"
+            onClick={() => setBodyMapOpen(true)}
+          >
+            <PersonStanding size={18} />
+            Body map
+          </button>
+        </div>
       </section>
       <div className="notice">
         <strong>Practice with fictional data only. Do not enter real health information.</strong>
@@ -442,6 +463,24 @@ export function MyHealth({
               );
             })}
           </section>
+          {!readOnly && (
+            <HealthConnections
+              sample={session.sampleCheckups}
+              disabled={disabled}
+              load={() => {
+                if (
+                  window.confirm(
+                    `Add ${session.sampleCheckups.records} fictional checkup entries for ${session.patient.name}? Existing entries and visits will be kept. No provider is contacted.`,
+                  )
+                )
+                  void mutate(
+                    { action: 'load-checkups', confirmed: true },
+                    'Synthetic checkups loaded. Body map is ready.',
+                    () => setBodyMapOpen(true),
+                  );
+              }}
+            />
+          )}
           <Visits
             visits={session.visits}
             account={account}
@@ -513,11 +552,7 @@ export function MyHealth({
             <Trends records={records} />
           </div>
           {!readOnly && (
-            <section
-              className="card health-section"
-              ref={reportRef}
-              aria-label="Synthetic report library"
-            >
+            <section className="card health-section" aria-label="Synthetic report library">
               <h2>
                 <FileText size={18} />
                 Report library & simulated scanning
@@ -530,12 +565,14 @@ export function MyHealth({
                 <label>
                   Sample report
                   <select value={reportId} onChange={(e) => chooseReport(e.target.value)}>
-                    {reports.map((report) => (
-                      <option key={report.id} value={report.id}>
-                        {report.title}
-                        {session.importedReportIds.includes(report.id) ? ' · imported' : ''}
-                      </option>
-                    ))}
+                    {reports
+                      .filter((report) => report.fields.length > 0)
+                      .map((report) => (
+                        <option key={report.id} value={report.id}>
+                          {report.title}
+                          {session.importedReportIds.includes(report.id) ? ' · imported' : ''}
+                        </option>
+                      ))}
                   </select>
                 </label>
                 {selectedReport && (
@@ -642,13 +679,17 @@ export function MyHealth({
               </fieldset>
             </section>
           )}
-          {readOnly && session.importedReportIds.length > 0 && (
-            <section className="health-section" ref={reportRef} aria-label="Shared source reports">
-              <h2>Shared source reports</h2>
+          {session.importedReportIds.length > 0 && (
+            <section
+              className="health-section"
+              ref={sourceRef}
+              aria-label={readOnly ? 'Shared source reports' : 'Saved source reports'}
+            >
+              <h2>{readOnly ? 'Shared source reports' : 'Saved source reports'}</h2>
               {reports
                 .filter((report) => session.importedReportIds.includes(report.id))
                 .map((report) => (
-                  <details key={report.id} open={reportId === report.id}>
+                  <details key={report.id} open={sourceReportId === report.id}>
                     <summary>
                       {report.title} / {report.id}
                     </summary>
@@ -699,7 +740,7 @@ export function MyHealth({
                     {record.context && <p>Context: {record.context}</p>}
                     {record.pulse && <p>Pulse: {record.pulse} bpm</p>}
                     {record.duration && <p>Duration: {record.duration} minutes</p>}
-                    {record.kind === 'lab' && (
+                    {(record.kind === 'lab' || record.referenceRange) && (
                       <p>
                         Printed reference range: {record.referenceRange || 'Not recorded'} (source
                         text, not app interpretation)
@@ -710,8 +751,8 @@ export function MyHealth({
                       <button
                         className="health-source"
                         onClick={() => {
-                          chooseReport(record.reportId!);
-                          reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          setSourceReportId(record.reportId!);
+                          sourceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }}
                       >
                         View source {record.reportId}
@@ -757,6 +798,15 @@ export function MyHealth({
               ))}
             </div>
           </section>
+          {bodyMapOpen && (
+            <BodyMap
+              records={records}
+              reports={reports}
+              patientName={session.patient.name}
+              online={online}
+              close={() => setBodyMapOpen(false)}
+            />
+          )}
         </>
       )}
     </div>
