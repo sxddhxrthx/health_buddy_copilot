@@ -76,7 +76,7 @@ test('local authentication provisions roles and persistence survives reopening w
       runtime.database
         .prepare<[], { total: number }>('SELECT count(*) AS total FROM visit_revisions')
         .get()!.total,
-      2,
+      4,
     );
   } finally {
     runtime?.close();
@@ -130,7 +130,8 @@ test('authenticated sharing and visit ownership are enforced through the API', a
     const visit = state.visits[0];
     const own = async (): Promise<CareSnapshot> =>
       (await app.request(patient, 'health-demo', { action: 'read' })).json();
-    assert.equal((await own()).visits.length, 0);
+    assert.equal((await own()).visits.length, 1);
+    assert.ok(!(await own()).visits.some((entry) => entry.id === visit.id));
     state = await (
       await app.request(doctor, `${path}/visits`, {
         action: 'finalize',
@@ -191,7 +192,7 @@ test('authenticated sharing and visit ownership are enforced through the API', a
       ).status,
       404,
     );
-    assert.equal((await own()).visits.length, 1);
+    assert.equal((await own()).visits.length, 2);
     assert.equal(
       (
         await app.request(
@@ -246,7 +247,8 @@ test('sharing does not transfer visit authorship and stale revisions cannot over
     ).json();
     const visit = created.visits[0];
     const otherView: CareSnapshot = await (await app.request(other, path)).json();
-    assert.equal(otherView.visits.length, 0);
+    assert.equal(otherView.visits.length, 1);
+    assert.ok(!otherView.visits.some((entry) => entry.id === visit.id));
     assert.equal(
       (
         await app.request(other, `${path}/visits`, {
@@ -285,7 +287,7 @@ test('sharing does not transfer visit authorship and stale revisions cannot over
       syntheticOnly: true,
     });
     const published: CareSnapshot = await (await app.request(other, path)).json();
-    assert.equal(published.visits.length, 1);
+    assert.equal(published.visits.length, 2);
     assert.equal(
       (
         await app.request(other, `${path}/visits`, {

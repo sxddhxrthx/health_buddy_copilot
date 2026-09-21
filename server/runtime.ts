@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { seedHealthRecords } from './health-data.js';
 import { emptyVisitDraft } from '../shared/care.js';
-import { seedPresentationVisit } from './presentation-seed.js';
+import { seedPatientResearchScenarios, seedPresentationVisit } from './presentation-seed.js';
 
 export const DEMO_ACCOUNTS = [
   { email: 'sam@patient.example', name: 'Sam Taylor', role: 'patient', persona: 'SYN-USER-001' },
@@ -226,6 +226,7 @@ export async function createRuntime(options: { directory?: string; baseURL?: str
       ids.get('jordan@patient.example')!,
       ids.get('avery@doctor.example')!,
     );
+    seedPatientResearchScenarios(database);
     return { auth, database, baseURL, directory, close: () => database.close() };
   } catch (error) {
     database.close();

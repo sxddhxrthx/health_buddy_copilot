@@ -1,5 +1,19 @@
 import type { Person } from './care.js';
 
+export type PatientResearchContext = {
+  dataVersion: string;
+  sourceId: string;
+  ageBand: string;
+  asOf: string;
+  presentation: string;
+  environment: string;
+  medicationReview: string;
+  allergyReview: string;
+  timeline: { date: string; title: string; detail: string }[];
+  missing: { label: string; detail: string }[];
+  provenance: string;
+};
+
 export type ConfirmedConditionSource = {
   visitId: string;
   revision: number;
@@ -8,6 +22,7 @@ export type ConfirmedConditionSource = {
 };
 export type PatientResearch = {
   patient: Person;
+  context?: PatientResearchContext;
   dataVersion: string;
   matchingVersion: string;
   unmatched: ConfirmedConditionSource[];

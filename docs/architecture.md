@@ -34,7 +34,7 @@ The requested [ADR 0002](decisions/0002-authenticated-synthetic-workspaces.md) a
   initialization, persistent named volume, loopback host binding and HTTP health check.
 
 The clinician patient tab now selects shared patients. Alex Morgan's original timeline remains
-accessible from the Buddy cohort page as a separate reference scenario. Reference matching,
+accessible through **View reference patient** as a separate reference scenario. Reference matching,
 templates, evidence and briefs never receive the selected patient's records.
 
 ## Runtime
@@ -79,18 +79,25 @@ current finalized visits, and projects confirmed condition sources. `server/pati
 performs exact-label associations to independent versioned fixtures with cohort/cell suppression.
 `shared/patient-research.ts` defines the additive response. No personal readings, revision history,
 drafts, medication fields or summaries enter this matcher. Reference APIs and model activation gates
-are unchanged. No schema migration, dependency or external service is involved.
+are unchanged. No dependency or external service is involved.
 `server/presentation-seed.ts` uses one-time provisioning migration 5 to append Jordan's explicitly
-fictional finalized heart-failure visit to the existing visit tables without replacing records or
-sharing grants. It respects the 200-visit limit. Condition fixtures v2 provide public-friendly
-explanations, accessible documentation-count bars and a detailed invented study; these are not
-clinical evidence. Sam's no-match view provides the routine-care presentation comparison.
+fictional finalized heart-failure visit without replacing records or sharing grants. The requested
+[ADR 0005](decisions/0005-selected-patient-study-scenarios.md) adds migration 6: a separate
+`patient_research_context` table holds fixed versioned fictional background for each persona, and
+Sam/Casey receive distinct confirmed hypertension/asthma scenario visits. Existing equivalent
+confirmed conditions are not duplicated; amendments, grants, readings and the 200-visit limit are
+preserved. Jordan's existing condition is never restored by migration 6. Optional research context
+is read only after authorization and never passed to the matcher. Condition fixtures v3 expand
+study explanations; the exact-label association algorithm remains v2.
 
-Buddy cohort and Research study retain the main-branch reference UI (comparison slider, checkboxes,
-matching action, study metrics, site table and evidence tools). Selected-patient details appear in an
-additional, separately labelled section on each page, independently of reference API loading/errors.
-The reference banner links to that section and explains that reference controls, metrics and Copilot
-never operate on the selected patient. Reference filter changes do not alter condition-label matches.
+Buddy cohort and Research study now show only the selected patient's authorized research by
+default, independently of reference API loading/errors. The patient banner shows the selected
+identity and clearly fictional scenario date/age band, with separate provenance and unknown-data
+disclosures. Independent study counts do not imply enrollment. No selection, no match, denied
+access and offline states never substitute Alex or WINTER-26. **View reference patient** opens the
+separate reference experience; **Reference cohort** and **Reference study** retain its comparison
+controls, study metrics, site table, Copilot and evidence tools. Main navigation always returns to
+selected-patient research. Reference filters never alter condition-label matches.
 
 ## Authoritative details
 

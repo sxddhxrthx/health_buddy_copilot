@@ -2,7 +2,7 @@ import type { Person } from '../shared/care.js';
 import { MIN_CELL, MIN_COHORT } from '../shared/contracts.js';
 import type { ConfirmedConditionSource, PatientResearch } from '../shared/patient-research.js';
 
-export const PATIENT_RESEARCH_DATA_VERSION = 'condition-fixtures-v2';
+export const PATIENT_RESEARCH_DATA_VERSION = 'condition-fixtures-v3';
 export const PATIENT_RESEARCH_MATCH_VERSION = 'finalized-confirmed-exact-label-v2';
 
 const catalog: {
@@ -65,6 +65,41 @@ const catalog: {
       description:
         'Synthetic study design exploring completeness of blood-pressure follow-up documentation. No intervention or treatment-effect claim.',
     },
+    presentation: {
+      headline: 'A blood-pressure documentation scenario',
+      explanation:
+        "Hypertension is an explicitly recorded fictional condition label, not a diagnosis inferred from this patient's readings.",
+      highlights: [
+        {
+          label: 'Scenario background',
+          text: 'A routine fictional follow-up provides a different demonstration from the heart-failure scenario. It is not a severity comparison.',
+        },
+        {
+          label: 'Recorded source',
+          text: 'Only the current finalized, author-confirmed condition label creates this association.',
+        },
+      ],
+      studyQuestion:
+        'How often is follow-up documented in independent fictional blood-pressure cases?',
+      studyDesign:
+        'Illustrative record review of 60 invented cases. The selected patient is not enrolled and personal readings do not enter the counts.',
+      studySteps: [
+        {
+          label: 'Label association',
+          text: 'Use the exact fictional condition label without assessing eligibility or reading personal measurements.',
+        },
+        {
+          label: 'Documentation review',
+          text: 'Assign each independent fixture a documented or missing fictional follow-up category.',
+        },
+        {
+          label: 'Aggregate snapshot',
+          text: 'Display 30 documented and 30 missing notes; no real appointments or outcomes are tracked.',
+        },
+      ],
+      limitations:
+        'Invented documentation counts are not blood-pressure control, treatment effects, medical evidence or proof that care was absent. Qualified human review is required.',
+    },
   },
   {
     condition: 'Type 2 diabetes',
@@ -82,6 +117,41 @@ const catalog: {
       title: 'Fictional respiratory documentation study',
       description:
         'Synthetic study design exploring completeness of respiratory follow-up documentation. No intervention or treatment-effect claim.',
+    },
+    presentation: {
+      headline: 'A respiratory documentation scenario',
+      explanation:
+        'Asthma is an explicitly recorded fictional condition label, not a diagnosis inferred from symptoms, oxygen readings or a model.',
+      highlights: [
+        {
+          label: 'Scenario background',
+          text: 'An invented cough-and-wheeze history supplies context, not diagnostic evidence.',
+        },
+        {
+          label: 'Recorded source',
+          text: 'A separate finalized, author-confirmed visit supplies the association. Earlier provisional visits remain unchanged.',
+        },
+      ],
+      studyQuestion:
+        'How consistently is respiratory follow-up documented in independent fictional cases?',
+      studyDesign:
+        'Illustrative record review of 60 invented cases. The selected patient is not enrolled and is not included in the aggregates.',
+      studySteps: [
+        {
+          label: 'Label association',
+          text: 'Associate the exact finalized condition label with the bundled fictional study.',
+        },
+        {
+          label: 'Documentation categories',
+          text: 'Use invented documented-follow-up and missing-follow-up categories, not symptom or severity estimates.',
+        },
+        {
+          label: 'Aggregate snapshot',
+          text: 'Display 30 documented and 30 missing notes without scheduling care or monitoring outcomes.',
+        },
+      ],
+      limitations:
+        'These fictional categories cannot establish asthma control, a treatment choice, prognosis or study eligibility. Missing notes do not prove missing care. Qualified human review is required.',
     },
   },
 ];

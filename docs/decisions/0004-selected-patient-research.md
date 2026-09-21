@@ -35,6 +35,12 @@ Sharing language explains this local fictional research use.
 
 ## Requested presentation extension
 
+The September 21 follow-on request is recorded in
+[ADR 0005](0005-selected-patient-study-scenarios.md). It replaces Sam's default no-match scenario
+and the mixed reference/selected page presentation described in earlier implementation notes.
+The label-only matching boundary below is unchanged; this earlier decision remains a history of
+the September 18 request, not approval of the later extension.
+
 The requester selected adding Jordan's fictional confirmed heart-failure visit to the saved demo
 workspace while preserving existing records and keeping Sam as the routine-care comparison.
 This records that conversation's implementation scope only; teammate review and a shared approval

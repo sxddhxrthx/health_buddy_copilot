@@ -73,11 +73,16 @@ fictional cohort aggregates and bundled fictional studies. Unsupported/absent la
 Personal entries, measurements, drafts and prescriptions do not drive matching. Reference research
 and the disabled evidence-review model pilot remain separate. No automatic illness detection is added.
 
-The requested presentation extension adds one explicitly fictional advanced-heart-failure visit
-for Jordan, independent 120-case documentation aggregates and a plain-language fictional study.
-Sam remains the simpler routine-care/no-match comparison, not a clinically verified healthy control.
-One-time additive provisioning preserves existing entries, visits, revisions and sharing settings;
-see ADR 0004 for the capacity exception and outstanding review.
+The first presentation extension adds one explicitly fictional advanced-heart-failure visit for
+Jordan and independent 120-case documentation aggregates. The September 21 requested extension in
+[ADR 0005](decisions/0005-selected-patient-study-scenarios.md) adds fixed fictional profile context
+for all three personas and distinct confirmed hypertension/asthma scenarios for Sam/Casey. This
+replaces Sam's default no-match presentation, while preserving explicit no-match behavior when no
+supported current confirmed condition exists. One-time additive provisioning preserves existing
+entries, visits, revisions, sharing settings and capacity limits. Buddy cohort and Research study
+prioritize the selected patient; Alex's reference controls and Copilot require explicit reference
+navigation. Study counts remain independent invented fixtures, not patient enrollment. Teammate
+review and shared approval tracking remain outstanding.
 
 ### Still deferred
 

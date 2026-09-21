@@ -84,7 +84,13 @@ test('patient research enforces grants and uses only current finalized confirmed
     assert.equal((await app.request('riley@doctor.example', `${path}/research`)).status, 404);
     assert.equal((await app.request(doctor, 'care/patients/missing/research')).status, 404);
     assert.equal((await app.request(doctor, `${path}/research?diagnosis=Asthma`)).status, 400);
-    assert.equal((await read()).matches.length, 0);
+    const seededResearch = await read();
+    assert.deepEqual(
+      seededResearch.matches.map((match) => match.condition),
+      ['Hypertension'],
+    );
+    assert.equal(seededResearch.context?.dataVersion, 'patient-scenarios-v1');
+    assert.equal(seededResearch.context?.sourceId, 'SYN-SCENARIO-SYN-USER-001');
     await app.request(patient, 'health-demo', {
       action: 'save',
       syntheticOnly: true,
@@ -104,8 +110,20 @@ test('patient research enforces grants and uses only current finalized confirmed
       assert.equal(response.status, 200);
       return response.json();
     };
+    const seededState: CareSnapshot = await (await app.request(doctor, path)).json();
+    const seededVisit = seededState.visits.find(
+      (visit) => visit.draft.diagnosis === 'Hypertension',
+    )!;
+    await mutate({
+      action: 'amend',
+      visitId: seededVisit.id,
+      revision: seededVisit.revision,
+      draft: { ...seededVisit.draft, diagnosisStatus: 'provisional' },
+      reason: 'Fictional no-match test setup',
+    });
+    assert.equal((await read()).matches.length, 0, 'background context must not produce a match');
     let state = await mutate({ action: 'create', draft });
-    let visit = state.visits.find((visit) => visit.draft.diagnosis === 'Hypertension')!;
+    let visit = state.visits.find((visit) => visit.status === 'draft')!;
     assert.equal((await read()).matches.length, 0, 'confirmed draft must not match');
     state = await mutate({ action: 'finalize', visitId: visit.id, revision: visit.revision });
     visit = state.visits.find((entry) => entry.id === visit.id)!;
@@ -117,7 +135,8 @@ test('patient research enforces grants and uses only current finalized confirmed
     );
     assert.equal(result.matches[0].sources[0].revision, visit.revision);
     assert.ok(!JSON.stringify(result).includes('PRIVATE SUMMARY SENTINEL'));
-    assert.ok(!JSON.stringify(result).includes('medication'));
+    assert.ok(!JSON.stringify(result.matches).includes('medication'));
+    assert.ok(!Object.hasOwn(result, 'records'));
     const other: PatientResearch = await (
       await app.request(doctor, `care/patients/${jordan.id}/research`)
     ).json();
@@ -172,6 +191,36 @@ test('patient research enforces grants and uses only current finalized confirmed
       syntheticOnly: true,
     });
     assert.equal((await app.request(doctor, `${path}/research`)).status, 404);
+  } finally {
+    await app.close();
+  }
+});
+
+test('each provisioned patient exposes only their authorized fictional context and study', async () => {
+  const app = await testApplication();
+  try {
+    for (const [patientEmail, doctorEmail, condition, studyId] of [
+      ['sam@patient.example', 'avery@doctor.example', 'Hypertension', 'SYN-BP-26'],
+      ['jordan@patient.example', 'avery@doctor.example', 'Advanced heart failure', 'SYN-HEART-26'],
+      ['casey@patient.example', 'riley@doctor.example', 'Asthma', 'SYN-RESP-26'],
+    ] as const) {
+      const state: CareSnapshot = await (
+        await app.request(patientEmail, 'health-demo', { action: 'read' })
+      ).json();
+      const response = await app.request(doctorEmail, `care/patients/${state.patient.id}/research`);
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      const research: PatientResearch = await response.json();
+      assert.equal(research.patient.id, state.patient.id);
+      assert.equal(research.context?.sourceId, `SYN-SCENARIO-${state.patient.persona}`);
+      assert.deepEqual(
+        research.matches.map((match) => match.condition),
+        [condition],
+      );
+      assert.equal(research.matches[0].study.id, studyId);
+      assert.ok(!JSON.stringify(research).includes('WINTER-26'));
+      assert.ok(!JSON.stringify(research).includes('Alex Morgan'));
+    }
   } finally {
     await app.close();
   }

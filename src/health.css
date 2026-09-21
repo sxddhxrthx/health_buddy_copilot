@@ -116,6 +116,110 @@
 .research-study li {
   padding: 12px 0;
 }
+.research-content {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.reference-entry {
+  margin-top: 24px;
+}
+.patient-research .patient-banner {
+  border-radius: 8px;
+}
+.patient-research .visit-record {
+  padding: 24px 0;
+  gap: 16px;
+}
+.patient-research .research-summary {
+  border: 0;
+  border-left: 3px solid var(--teal);
+  border-radius: 0;
+  background: #edf5f2;
+}
+.patient-research h3 {
+  font-size: 20px;
+  letter-spacing: 0;
+}
+.patient-research h4 {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+.patient-research p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.patient-research .patient-identity p,
+.patient-research .card-footnote {
+  font-size: 12px;
+}
+.research-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 20px;
+  padding: 20px 0;
+  border-block: 1px solid var(--line);
+  margin: 0;
+}
+.research-metrics dt {
+  font-size: 12px;
+  color: #586f77;
+}
+.research-metrics dd {
+  margin: 8px 0 0;
+  font-size: 28px;
+  color: var(--teal);
+}
+.research-metrics > div:last-child dd {
+  color: #926017;
+}
+.research-context {
+  border-block: 1px solid var(--line);
+  padding: 20px 0;
+  overflow-wrap: anywhere;
+}
+.research-context summary {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+}
+.research-context > p,
+.research-context h3 {
+  margin-top: 16px;
+}
+.research-context-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+.research-context-facts dt {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.research-context-facts dd {
+  margin: 0;
+  color: #586f77;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.research-context-timeline {
+  display: grid;
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.research-context-timeline li {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 12px;
+}
+.research-context-timeline time {
+  font-size: 12px;
+  color: #586f77;
+}
 @media (max-width: 760px) {
   .top-actions .secondary span {
     display: none;

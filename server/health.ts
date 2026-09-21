@@ -161,7 +161,15 @@ export function healthRouter({ database }: Runtime) {
           ]
         : [];
     });
-    res.json(patientResearch(patient, confirmed));
+    const context = database
+      .prepare<[string], { data: string }>(
+        'SELECT data FROM patient_research_context WHERE patient_id = ?',
+      )
+      .get(id);
+    res.json({
+      ...patientResearch(patient, confirmed),
+      ...(context ? { context: JSON.parse(context.data) } : {}),
+    });
   });
   router.get('/care/sharing', (_req, res) => {
     const viewer = res.locals.user as Account;

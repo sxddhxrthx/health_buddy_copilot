@@ -20,6 +20,8 @@ The initial baseline records already implemented behavior, not a claim of new fe
 
 - [0004: Selected synthetic patient research navigation](0004-selected-patient-research.md) —
   Proposed; implementation requested; teammate review/shared approval link pending.
+- [0005: Selected-patient study and complete fictional scenarios](0005-selected-patient-study-scenarios.md) -
+  Proposed; implementation explicitly requested after the data audit; teammate review/shared approval link pending.
 
 | Record                                                                                 | Status                             | Scope                                                                              |
 | -------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |

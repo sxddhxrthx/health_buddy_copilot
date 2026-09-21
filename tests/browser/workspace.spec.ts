@@ -39,7 +39,7 @@ test('five-minute journey: patient, cohort, provenance, refusal, review and stud
   await page.getByRole('button', { name: 'Download .md' }).click();
   expect((await downloadPromise).suggestedFilename()).toBe('research-twin-review.md');
   await page.getByRole('button', { name: 'Close dialog' }).click();
-  await page.getByRole('button', { name: 'Research study', exact: true }).click();
+  await page.getByRole('button', { name: 'Reference study', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'WINTER-26', exact: true })).toBeVisible();
   await expect(page.getByText('336 of 360 visits')).toBeVisible();
   expect(errors).toEqual([]);

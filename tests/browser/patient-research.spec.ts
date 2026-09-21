@@ -3,7 +3,7 @@ import { signIn } from './helpers';
 import type { Person } from '../../shared/care';
 import type { PatientResearch } from '../../shared/patient-research';
 
-test('Jordan has a detailed fictional heart scenario and Sam has a simpler comparison', async ({
+test('Jordan and Sam have distinct fictional scenarios with patient-specific context', async ({
   page,
 }) => {
   await signIn(page, 'avery@doctor.example');
@@ -45,13 +45,45 @@ test('Jordan has a detailed fictional heart scenario and Sam has a simpler compa
   await page.getByRole('button', { name: 'Return to Current patient', exact: true }).click();
   await selector.selectOption({ label: 'Sam Taylor / SYN-USER-001' });
   await page.getByRole('button', { name: 'View cohort details', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Routine-care comparison' })).toBeVisible();
-  await expect(page.getByText(/does not establish that Sam is healthy/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sam Taylor', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hypertension', exact: true })).toBeVisible();
+  await expect(page.getByText('60 independently generated fictional cases')).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Advanced heart failure', exact: true }),
   ).toHaveCount(0);
   await page.getByRole('button', { name: 'View research details', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Routine-care comparison' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Fictional blood-pressure documentation study' }),
+  ).toBeVisible();
+  await page.getByText('Fictional patient context and data gaps', { exact: true }).click();
+  const background = page.locator('#patient-scenario-source');
+  await expect(background).toContainText('SYN-SCENARIO-SYN-USER-001');
+  await expect(background).toContainText('Allergies are unverified');
+  await expect(page.getByRole('region', { name: 'Research patient summary' })).toContainText(
+    'Age band 40-49',
+  );
+});
+
+test('Casey has a separate asthma study under the existing sharing grant', async ({ page }) => {
+  await signIn(page, 'riley@doctor.example');
+  await page.goto('/');
+  await page
+    .getByRole('combobox', { name: 'Current patient', exact: true })
+    .selectOption({ label: 'Casey Patel / SYN-USER-003' });
+  await page.getByRole('button', { name: 'View research details', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Casey Patel', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Fictional respiratory documentation study' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /Alex Morgan|Jordan Lee|Sam Taylor|WINTER-26/ }),
+  ).toHaveCount(0);
+  await page.getByText('Fictional patient context and data gaps', { exact: true }).click();
+  await expect(page.locator('#patient-scenario-source')).toContainText('SYN-SCENARIO-SYN-USER-003');
+  await expect(page.getByRole('region', { name: 'Research patient summary' })).toContainText(
+    'Age band 30-39',
+  );
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 // Mock only the research response to avoid mutating records shared by parallel browser suites.
