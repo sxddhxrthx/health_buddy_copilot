@@ -131,19 +131,19 @@ https://commons.wikimedia.org/wiki/File:Human_body_silhouette.svg . It is stored
 2. Select **Jordan Lee**, open **View cohort details**. Start with **Presentation at a glance**:
    advanced heart failure is an authored fictional label, not something the app detected.
    Explain that a cohort is simply a group of cases sharing that label.
-3. Show the 120 independent invented cases: **90 (75%)** have a fictional follow-up note and
-   **30 (25%)** do not. The bars describe documentation, not recovery, risk or treatment success.
+3. Show the 80 independent invented cases: **60 (75%)** have a fictional follow-up note and
+   **20 (25%)** do not. The bars describe documentation, not recovery, risk or treatment success.
 4. Open **View research details**. Walk through the everyday-language question, record-review
    design, illustrative 30-day window and limitations. The study is made up, not recruiting,
    and the selected patient's records are not included in its counts.
 5. Expand **Recorded condition sources**, then return to Current patient and inspect the seeded
    finalized visit for the detailed fictional history, functional-class text, ejection-fraction
    example and January timeline. Those details do not feed matching; personal readings are unchanged.
-6. Select **Sam Taylor** to show the blood-pressure documentation scenario: 60 independent invented
-   cases with 30 documented and 30 missing follow-up notes. Sign in as Dr Riley Shah and select
+6. Select **Sam Taylor** to show the blood-pressure documentation scenario: 40 independent invented
+   cases with 26 documented and 14 missing follow-up notes. Sign in as Dr Riley Shah and select
    **Casey Patel** for the distinct respiratory documentation study. Existing sharing grants are
    unchanged; other doctors see Casey only if Casey explicitly shares with them.
-7. Expand **Fictional patient context and data gaps** to inspect versioned background, age band,
+7. In Research study, expand **Fictional patient context and data gaps** to inspect background, age band,
    scenario dates, provenance and unresolved information. The background is fixed invented text,
    not a current medical assessment and not an input to matching. Allergies and reconciliation
    remain unverified. A later visit amendment changes the association, not the background.
@@ -158,6 +158,12 @@ No missing personal readings are imputed, no sample checkups are auto-loaded, an
 prescriptions, visits, revisions or grants are replaced. A no-match state remains valid after
 amendments or a capacity skip and does not establish health or normal readings.
 There are no actual clinical findings, prescriptions, prognosis estimates or real study claims.
+
+The population extension adds 197 separate selectable patients with two fictional visits each and
+initial sharing with both doctors, without changing these original scenarios or grants. Its
+completion marker is 7. The combined version-4 research catalogue contains 200 independent cases,
+not these patient accounts. Reference-only score filters and Copilot are unavailable for selected
+records; use explicit reference navigation for Alex's unchanged demonstration.
 
 ## Architecture and boundaries
 

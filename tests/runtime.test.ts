@@ -7,12 +7,20 @@ import { createRuntime } from '../server/runtime.js';
 import { testApplication } from './helpers.js';
 import { emptyHealthDraft } from '../shared/health.js';
 import { emptyVisitDraft, type CareSnapshot, type Person } from '../shared/care.js';
+import { EXPANDED_PATIENTS } from '../server/expanded-patients.js';
 
 test('local authentication provisions roles and persistence survives reopening without reseeding', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'research-twin-auth-'));
   let runtime: Awaited<ReturnType<typeof createRuntime>> | undefined;
   try {
     runtime = await createRuntime({ directory });
+    assert.equal(
+      runtime.database
+        .prepare<[], { total: number }>("SELECT count(*) AS total FROM user WHERE role = 'patient'")
+        .get()!.total,
+      200,
+    );
+    assert.equal(new Set(EXPANDED_PATIENTS.map((patient) => patient.name)).size, 197);
     const credentials = JSON.parse(readFileSync(join(directory, 'demo-accounts.json'), 'utf8')) as {
       email: string;
       password: string;
@@ -53,18 +61,18 @@ test('local authentication provisions roles and persistence survives reopening w
       runtime.database
         .prepare<[], { total: number }>('SELECT count(*) AS total FROM health_records')
         .get()!.total,
-      47,
+      3199,
     );
     assert.equal(
       runtime.database.prepare<[], { total: number }>('SELECT count(*) AS total FROM user').get()!
         .total,
-      5,
+      202,
     );
     assert.equal(
       runtime.database
         .prepare<[], { total: number }>('SELECT count(*) AS total FROM sharing')
         .get()!.total,
-      3,
+      397,
     );
     assert.equal(
       runtime.database
@@ -76,7 +84,7 @@ test('local authentication provisions roles and persistence survives reopening w
       runtime.database
         .prepare<[], { total: number }>('SELECT count(*) AS total FROM visit_revisions')
         .get()!.total,
-      4,
+      398,
     );
   } finally {
     runtime?.close();
@@ -95,7 +103,19 @@ test('authenticated sharing and visit ownership are enforced through the API', a
     assert.equal((await app.request(patient, 'study')).status, 403);
     assert.equal((await app.request(patient, 'care/patients')).status, 403);
     const patients: Person[] = await (await app.request(doctor, 'care/patients')).json();
-    assert.equal(patients.length, 2);
+    assert.equal(patients.length, 199);
+    const expanded = patients.find((person) => person.persona === 'SYN-USER-004')!;
+    const expandedState: CareSnapshot = await (
+      await app.request(doctor, `care/patients/${expanded.id}`)
+    ).json();
+    assert.equal(expandedState.records.length, 16);
+    assert.equal(expandedState.visits.length, 2);
+    assert.ok(
+      expandedState.visits.every(
+        (visit) => visit.status === 'finalized' && visit.history.length === 1,
+      ),
+    );
+    assert.equal((await app.request(otherDoctor, `care/patients/${expanded.id}`)).status, 200);
     const sam = patients.find((person) => person.name === 'Sam Taylor')!;
     const path = `care/patients/${sam.id}`;
     assert.equal((await app.request(otherDoctor, path)).status, 404);

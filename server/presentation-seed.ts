@@ -94,12 +94,21 @@ const scenarios = [
 
 export function seedPatientResearchScenarios(database: Database.Database) {
   database.transaction(() => {
+    const hasScenarioContextTable = database
+      .prepare(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'patient_research_context'",
+      )
+      .get();
     database.exec(`
       CREATE TABLE IF NOT EXISTS patient_research_context (
         patient_id TEXT PRIMARY KEY REFERENCES user(id), data TEXT NOT NULL
       );
     `);
-    if (database.prepare('SELECT 1 FROM app_migrations WHERE version = 6').get()) return;
+    if (
+      hasScenarioContextTable &&
+      database.prepare('SELECT 1 FROM app_migrations WHERE version = 6').get()
+    )
+      return;
     for (const scenario of scenarios) {
       const patient = database
         .prepare<[string], { id: string }>(
@@ -197,6 +206,6 @@ export function seedPatientResearchScenarios(database: Database.Database) {
           publishedAt,
         );
     }
-    database.prepare('INSERT INTO app_migrations VALUES (6)').run();
+    database.prepare('INSERT OR IGNORE INTO app_migrations VALUES (6)').run();
   })();
 }

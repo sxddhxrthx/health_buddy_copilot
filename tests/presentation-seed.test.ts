@@ -123,11 +123,13 @@ test('presentation provisioning skips a full workspace without deleting visits',
   }
 });
 
-test('all patient scenarios add context and distinct matches without rewriting existing data', async () => {
+test('scenario migration supports expanded stores without rewriting existing data', async () => {
   const app = await testApplication();
   try {
     const database = app.runtime.database;
     beforeScenarioMigration(database);
+    database.exec('DROP TABLE patient_research_context');
+    database.prepare('INSERT INTO app_migrations VALUES (6)').run();
     const records = database.prepare('SELECT * FROM health_records ORDER BY id').all();
     const visits = database.prepare('SELECT * FROM visits ORDER BY id').all();
     const revisions = database

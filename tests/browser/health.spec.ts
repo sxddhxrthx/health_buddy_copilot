@@ -305,7 +305,7 @@ test('doctor selects shared patients, publishes a visit, and patient cannot edit
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('button', { name: 'My Health', exact: true })).toHaveCount(0);
   const selector = page.getByRole('combobox', { name: 'Current patient', exact: true });
-  await expect(selector.locator('option')).toHaveCount(3);
+  await expect(selector.locator('option')).toHaveCount(200);
   const option = selector.locator('option').filter({ hasText: name });
   await selector.selectOption((await option.getAttribute('value')) as string);
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();

@@ -54,6 +54,13 @@ use the general/systemic group. Missing/ambiguous ranges remain unknown. Human r
 
 ## Requested richer demo
 
+The subsequent [200-patient request](decisions/0005-expanded-synthetic-cohort-demo.md) keeps the cohort
+visual components while supplying selected-patient labels and independent aggregates. The demo now
+provisions 200 synthetic patient accounts; existing records/grants are preserved. The selected-patient
+research catalogue contains exactly 200 separate fictional cases, not these account records, with
+documentation distributions across four supported labels. Alex's 480-case reference demo is unchanged.
+Teammate review and shared approval tracking remain pending.
+
 The owner approved Three.js and optional sample loading in [ADR 0004](decisions/0004-3d-map-and-synthetic-checkups.md).
 The expanded catalogue has 126 numeric measurements plus six qualitative findings on each of three
 dates (396 entries), with contrasting circulation, liver/kidney and vitamin/mineral profiles.
@@ -83,6 +90,12 @@ entries, visits, revisions, sharing settings and capacity limits. Buddy cohort a
 prioritize the selected patient; Alex's reference controls and Copilot require explicit reference
 navigation. Study counts remain independent invented fixtures, not patient enrollment. Teammate
 review and shared approval tracking remain outstanding.
+
+The merged implementation retains both requested extensions: 200 selectable patient accounts,
+scenario context for the original three personas, and the cohort presentation components. Combined
+condition fixtures v4 contain 200 independent cases (80 heart-failure and 40 per other supported
+label), replacing the earlier presentation counts. Scenario migration 6 and population marker 7
+support stores from either branch without resetting records, credentials or sharing.
 
 ### Still deferred
 

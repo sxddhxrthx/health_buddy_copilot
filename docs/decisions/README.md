@@ -18,6 +18,9 @@ The initial baseline records already implemented behavior, not a claim of new fe
 
 ## Index
 
+- [0005: Preserve cohort presentation and expand synthetic demo data](0005-expanded-synthetic-cohort-demo.md) —
+  Proposed; 200 patient accounts and 200 independent condition fixtures requested; review pending.
+
 - [0004: Selected synthetic patient research navigation](0004-selected-patient-research.md) —
   Proposed; implementation requested; teammate review/shared approval link pending.
 - [0005: Selected-patient study and complete fictional scenarios](0005-selected-patient-study-scenarios.md) -

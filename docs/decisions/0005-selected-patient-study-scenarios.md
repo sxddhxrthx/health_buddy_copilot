@@ -48,6 +48,19 @@ states. The original reference scenario, matching controls, study and determinis
 available only in an explicitly separate reference experience. Study operational counts are
 independent fixtures, never claims of patient enrollment or generated from personal entries.
 
+## Compatibility with the population extension
+
+The merged [200-patient extension](0005-expanded-synthetic-cohort-demo.md) preserves these three
+scenarios while adding 197 separate patient accounts and retaining the cohort presentation
+components. Research study remains selected-patient first. Combined `condition-fixtures-v4` retains
+the richer study explanations with 80 heart-failure cases and 40 for each other supported label,
+200 independent cases in total. Label matching remains v2; no workspace readings enter the counts.
+
+Both branches previously used migration marker 6. Population provisioning now records marker 7.
+The presence of the scenario context table distinguishes a completed scenario migration from an
+earlier population-only marker 6. The former remains a no-op, including after amendments; the latter
+receives the additive scenario transaction. No migration history, visits or grants are reset.
+
 ## Boundaries
 
 Only current finalized author-confirmed condition labels determine research associations under
@@ -68,6 +81,8 @@ does not delete stored context or visits. Authors can amend seeded diagnoses thr
 revision-preserving controls. Never reset migration history or erase a volume to roll back.
 
 ## Local verification (September 21, 2026)
+
+These results describe the scenario branch before integration with the population extension.
 
 - `npm run format:check`: passed.
 - `npm run check`: TypeScript, production PWA/server builds and all 57 unit/API tests passed.

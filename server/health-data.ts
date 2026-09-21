@@ -66,21 +66,21 @@ export function reportsForPatient(patient: { name: string; persona: string }): D
 }
 export const demoReports = reportsForPatient({ name: 'Sam Taylor', persona: 'SYN-USER-001' });
 
-export function seedHealthRecords(): HealthRecord[] {
+export function seedHealthRecords(profile = 0): HealthRecord[] {
   const records: HealthDraft[] = [];
   for (let day = 11; day <= 15; day++) {
     const date = `2026-01-${day}`;
     records.push(
-      draft('glucose', String(96 + (day % 3) * 4), {
+      draft('glucose', String(96 + (day % 3) * 4 + (profile % 7) * 3), {
         measuredAt: `${date}T08:00`,
         context: 'Fasting',
       }),
-      draft('bp', String(118 + (day % 3) * 2), {
+      draft('bp', String(118 + (day % 3) * 2 + (profile % 5) * 3), {
         measuredAt: `${date}T08:10`,
         secondary: String(76 + (day % 3)),
         pulse: '72',
       }),
-      draft('walking', (2 + (day % 3) * 0.5).toFixed(1), {
+      draft('walking', (2 + (day % 3) * 0.5 + (profile % 4) * 0.2).toFixed(1), {
         measuredAt: `${date}T17:00`,
         duration: '35',
       }),

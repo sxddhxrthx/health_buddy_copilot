@@ -2,7 +2,7 @@ import type { Person } from '../shared/care.js';
 import { MIN_CELL, MIN_COHORT } from '../shared/contracts.js';
 import type { ConfirmedConditionSource, PatientResearch } from '../shared/patient-research.js';
 
-export const PATIENT_RESEARCH_DATA_VERSION = 'condition-fixtures-v3';
+export const PATIENT_RESEARCH_DATA_VERSION = 'condition-fixtures-v4';
 export const PATIENT_RESEARCH_MATCH_VERSION = 'finalized-confirmed-exact-label-v2';
 
 const catalog: {
@@ -38,7 +38,7 @@ const catalog: {
       ],
       studyQuestion: 'How consistently is follow-up documented in fictional heart-failure cases?',
       studyDesign:
-        'Illustrative record-review design: 120 independently generated fictional cases, each assigned one documentation category. The selected patient is not enrolled and is not included in these counts.',
+        'Illustrative record-review design: 80 independently generated fictional cases, each assigned documentation categories. The selected patient is not enrolled and is not included in these counts.',
       studySteps: [
         {
           label: 'Starting point',
@@ -82,7 +82,7 @@ const catalog: {
       studyQuestion:
         'How often is follow-up documented in independent fictional blood-pressure cases?',
       studyDesign:
-        'Illustrative record review of 60 invented cases. The selected patient is not enrolled and personal readings do not enter the counts.',
+        'Illustrative record review of 40 invented cases. The selected patient is not enrolled and personal readings do not enter the counts.',
       studySteps: [
         {
           label: 'Label association',
@@ -94,7 +94,7 @@ const catalog: {
         },
         {
           label: 'Aggregate snapshot',
-          text: 'Display 30 documented and 30 missing notes; no real appointments or outcomes are tracked.',
+          text: 'Summarize documented and missing fictional follow-up notes; no real appointments or outcomes are tracked.',
         },
       ],
       limitations:
@@ -135,7 +135,7 @@ const catalog: {
       studyQuestion:
         'How consistently is respiratory follow-up documented in independent fictional cases?',
       studyDesign:
-        'Illustrative record review of 60 invented cases. The selected patient is not enrolled and is not included in the aggregates.',
+        'Illustrative record review of 40 invented cases. The selected patient is not enrolled and is not included in the aggregates.',
       studySteps: [
         {
           label: 'Label association',
@@ -147,7 +147,7 @@ const catalog: {
         },
         {
           label: 'Aggregate snapshot',
-          text: 'Display 30 documented and 30 missing notes without scheduling care or monitoring outcomes.',
+          text: 'Summarize documented and missing fictional follow-up notes without scheduling care or monitoring outcomes.',
         },
       ],
       limitations:
@@ -156,17 +156,23 @@ const catalog: {
   },
 ];
 
-type FictionalRow = { condition: string; followup: string };
+type FictionalRow = { condition: string; followup: string; window?: string; setting?: string };
 // Independent fixtures, never populated from workspace patients. Rows never leave the server.
-const rows: FictionalRow[] = catalog.flatMap(({ condition }) =>
-  Array.from({ length: condition === 'Advanced heart failure' ? 120 : 60 }, (_, index) => ({
+const rows: FictionalRow[] = catalog.flatMap(({ condition }, group) =>
+  Array.from({ length: condition === 'Advanced heart failure' ? 80 : 40 }, (_, index) => ({
     condition,
     followup:
       condition === 'Advanced heart failure'
-        ? index < 90
+        ? index < 60
           ? 'Fictional follow-up note present'
           : 'Fictional follow-up note missing'
-        : ['Documented fictional follow-up', 'Missing fictional follow-up'][index % 2],
+        : ['Documented fictional follow-up', 'Missing fictional follow-up'][
+            index % (group + 2) === 0 ? 1 : 0
+          ],
+    window: ['Within 7 demo days', '8–30 demo days', 'After 30 demo days', 'Window not recorded'][
+      Math.floor(index / 10) % 4
+    ],
+    setting: ['Fictional outpatient record', 'Fictional remote record'][Math.floor(index / 5) % 2],
   })),
 );
 
@@ -179,6 +185,28 @@ export function conditionCohort(condition: string, fixtures = rows) {
     suppressed,
     total: suppressed ? null : matches.length,
     followup: suppressed ? [] : [...counts].map(([label, count]) => ({ label, count })),
+    ...(!suppressed && matches.every((row) => row.window && row.setting)
+      ? {
+          distributions: (['window', 'setting'] as const).map((key) => {
+            const cells = new Map<string, number>();
+            for (const row of matches) cells.set(row[key]!, (cells.get(row[key]!) ?? 0) + 1);
+            const withheld = [...cells.values()].some((count) => count < MIN_CELL);
+            return {
+              label:
+                key === 'window' ? 'Fictional documentation window' : 'Fictional record setting',
+              suppressed: withheld,
+              rows: withheld
+                ? []
+                : [...cells].map(([label, count]) => ({
+                    label,
+                    count,
+                    percent: Math.round((count / matches.length) * 100),
+                  })),
+              evidenceId: PATIENT_RESEARCH_DATA_VERSION,
+            };
+          }),
+        }
+      : {}),
   };
 }
 
@@ -207,6 +235,7 @@ export function patientResearch(
     patient,
     dataVersion: PATIENT_RESEARCH_DATA_VERSION,
     matchingVersion: PATIENT_RESEARCH_MATCH_VERSION,
+    fixtureTotal: rows.length,
     matches,
     unmatched: confirmed.filter(
       (source) =>

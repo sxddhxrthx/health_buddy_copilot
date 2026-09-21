@@ -82,22 +82,29 @@ drafts, medication fields or summaries enter this matcher. Reference APIs and mo
 are unchanged. No dependency or external service is involved.
 `server/presentation-seed.ts` uses one-time provisioning migration 5 to append Jordan's explicitly
 fictional finalized heart-failure visit without replacing records or sharing grants. The requested
-[ADR 0005](decisions/0005-selected-patient-study-scenarios.md) adds migration 6: a separate
-`patient_research_context` table holds fixed versioned fictional background for each persona, and
-Sam/Casey receive distinct confirmed hypertension/asthma scenario visits. Existing equivalent
-confirmed conditions are not duplicated; amendments, grants, readings and the 200-visit limit are
-preserved. Jordan's existing condition is never restored by migration 6. Optional research context
-is read only after authorization and never passed to the matcher. Condition fixtures v3 expand
-study explanations; the exact-label association algorithm remains v2.
+[scenario extension](decisions/0005-selected-patient-study-scenarios.md) adds migration 6: a separate
+`patient_research_context` table holds fixed fictional background for the original three personas,
+and Sam/Casey receive distinct confirmed hypertension/asthma visits. Existing equivalent conditions,
+amendments, readings, grants and visit capacity limits are preserved. Jordan is never reconfirmed.
+Context is read only after authorization and never passed to the matcher.
 
-Buddy cohort and Research study now show only the selected patient's authorized research by
-default, independently of reference API loading/errors. The patient banner shows the selected
-identity and clearly fictional scenario date/age band, with separate provenance and unknown-data
-disclosures. Independent study counts do not imply enrollment. No selection, no match, denied
-access and offline states never substitute Alex or WINTER-26. **View reference patient** opens the
-separate reference experience; **Reference cohort** and **Reference study** retain its comparison
-controls, study metrics, site table, Copilot and evidence tools. Main navigation always returns to
-selected-patient research. Reference filters never alter condition-label matches.
+The requested [population extension](decisions/0005-expanded-synthetic-cohort-demo.md) adds 197
+patients through `server/expanded-patients.ts`, with per-profile transactional provisioning and no
+reseeding of existing profiles. The merged runtime records its completion as migration 7. Earlier
+population-only stores used marker 6 without a context table; scenario provisioning distinguishes
+these from completed scenario stores so upgrades from either branch retain records and amendments.
+Condition fixtures v4 combine study explanations with exactly 200 independent fictional cases
+(80 heart-failure and 40 per other supported label). The association algorithm remains v2.
+
+Buddy cohort and Research study prioritize the authorized selected patient, independently of
+reference API loading/errors. `src/PatientCohort.tsx` retains the cohort cards, distributions and
+evidence table; reference-only score filters and Copilot remain unavailable for selected records.
+`src/ResearchCards.tsx` shares display components with the reference experience. Research study
+shows available scenario context, provenance and unknown-data disclosures. Study counts are not
+patient enrollment. No selection, no match, denied access and offline states never substitute Alex
+or WINTER-26. **View reference patient**, **Reference cohort** and **Reference study** open the
+separate reference experience with its original controls and evidence tools. Main navigation returns
+to selected-patient research; reference filters never alter selected condition-label matches.
 
 ## Authoritative details
 

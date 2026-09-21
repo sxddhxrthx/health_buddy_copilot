@@ -41,6 +41,11 @@ and the mixed reference/selected page presentation described in earlier implemen
 The label-only matching boundary below is unchanged; this earlier decision remains a history of
 the September 18 request, not approval of the later extension.
 
+The later [200-patient extension](0005-expanded-synthetic-cohort-demo.md) revises the counts below:
+the combined condition fixtures v4 contain 80 heart-failure cases plus 40 for each other supported
+label (200 total), with 60/20 heart-failure follow-up categories. Both extensions preserve this
+exact-label matching boundary and remain pending teammate review.
+
 The requester selected adding Jordan's fictional confirmed heart-failure visit to the saved demo
 workspace while preserving existing records and keeping Sam as the routine-care comparison.
 This records that conversation's implementation scope only; teammate review and a shared approval

@@ -57,6 +57,14 @@ logs or commits. No public sign-up is enabled. POSIX modes or a Windows current-
 protect the local directory. Only pass a dedicated app-data directory through RESEARCH_TWIN_DATA_DIR.
 APP_ORIGIN must exactly match the browser origin (development default: http://localhost:5173).
 
+Provisioning now includes 200 fictional patients and two doctors. The 197 additional patients have
+16 sample readings and two finalized fictional visits each, initially shared with both doctors.
+Existing accounts, passwords, records and sharing choices remain unchanged; restart the app to apply
+the additive population seed. Initial password hashing takes longer than subsequent startups.
+The current-patient selector remains grant-filtered (199 patients for Avery and 198 for Riley on a
+fresh store). These accounts are separate from the 200 server-only condition-cohort fixtures and
+Alex Morgan's unchanged reference demo. Do not reset the database to obtain the added patients.
+
 For a production-style local demo after npm ci, run `npm run demo` and open http://localhost:8080.
 Alternatively, Docker Desktop with Linux containers provides the complete setup, including Node,
 dependencies, database initialization and seeded accounts:

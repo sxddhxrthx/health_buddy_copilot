@@ -22,7 +22,10 @@ test('condition fixtures use exact normalized labels, deduplicate cohorts and su
   const result = patientResearch(patient, sources);
   assert.equal(result.matches.length, 1);
   assert.equal(result.matches[0].sources.length, 2);
-  assert.equal(result.matches[0].cohort.total, 60);
+  assert.equal(result.matches[0].cohort.total, 40);
+  assert.equal(result.fixtureTotal, 200);
+  assert.equal(result.dataVersion, 'condition-fixtures-v4');
+  assert.match(result.matches[0].presentation!.studyDesign, /40 invented cases/);
   assert.equal(result.unmatched.length, 2);
   assert.deepEqual(patientResearch(patient, sources), result);
   assert.equal(patientResearch(patient, []).matches.length, 0);
@@ -40,21 +43,32 @@ test('condition fixtures use exact normalized labels, deduplicate cohorts and su
   for (const diagnosis of ['Type 2 diabetes', 'Asthma', 'Advanced heart failure']) {
     const matched = patientResearch(patient, [{ ...sources[0], diagnosis }]);
     assert.equal(matched.matches[0].condition, diagnosis);
-    assert.equal(
-      matched.matches[0].cohort.total,
-      diagnosis === 'Advanced heart failure' ? 120 : 60,
-    );
+    assert.equal(matched.matches[0].cohort.total, diagnosis === 'Advanced heart failure' ? 80 : 40);
+    if (matched.matches[0].presentation)
+      assert.ok(
+        matched.matches[0].presentation.studyDesign.includes(
+          String(matched.matches[0].cohort.total),
+        ),
+      );
+    for (const distribution of matched.matches[0].cohort.distributions!) {
+      assert.equal(distribution.suppressed, false);
+      assert.equal(
+        distribution.rows.reduce((sum, cell) => sum + cell.count, 0),
+        matched.matches[0].cohort.total,
+      );
+      assert.ok(distribution.rows.every((cell) => cell.count >= 5));
+    }
   }
   const heart = patientResearch(patient, [
     { ...sources[0], diagnosis: ' ADVANCED HEART FAILURE ' },
   ]);
   assert.deepEqual(
     heart.matches[0].cohort.followup.map((cell) => cell.count),
-    [90, 30],
+    [60, 20],
   );
   assert.equal(
     heart.matches[0].cohort.followup.reduce((sum, cell) => sum + cell.count, 0),
-    120,
+    80,
   );
   assert.equal(
     patientResearch(patient, [{ ...sources[0], diagnosis: 'Possible advanced heart failure' }])
@@ -144,7 +158,7 @@ test('patient research enforces grants and uses only current finalized confirmed
       other.matches.map((match) => match.condition),
       ['Advanced heart failure'],
     );
-    assert.equal(other.matches[0].cohort.total, 120);
+    assert.equal(other.matches[0].cohort.total, 80);
     assert.equal(other.matches[0].study.id, 'SYN-HEART-26');
     assert.ok(other.matches[0].presentation?.limitations.includes('deliberately invented'));
     assert.ok(
